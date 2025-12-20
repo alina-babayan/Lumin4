@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>Main.qml</file>
+        <file>first</file>
+        <file>eye.png</file>
+        <file>eye-closed.png</file>
+        <file>eye-off.png</file>
+        <file>OtpPage.qml</file>
+        <file>RegisterPage.qml</file>
+        <file>LoginPage.qml</file>
+        <file>ForgotPasswordPage.qml</file>
+        <file>DashboardPage.qml</file>
+        <file>SuccessDialog.qml</file>
+    </qresource>
+</RCC>
