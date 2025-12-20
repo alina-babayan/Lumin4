@@ -1,13 +1,13 @@
 #ifndef APIMANAGER_H
 #define APIMANAGER_H
 
-#include <QObject>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
+#include <QObject>
 #include <QSettings>
 #include <QUrl>
 #include <QUrlQuery>
@@ -23,8 +23,10 @@ public:
     // ==================== AUTH ENDPOINTS ====================
     void login(const QString &email, const QString &password);
     void verifyOtp(const QString &sessionToken, const QString &code);
-    void registerUser(const QString &firstName, const QString &lastName,
-                      const QString &email, const QString &password);
+    void registerUser(const QString &firstName,
+                      const QString &lastName,
+                      const QString &email,
+                      const QString &password);
     void forgotPassword(const QString &email);
     void resetPassword(const QString &token, const QString &newPassword);
     void refreshAccessToken();
@@ -55,7 +57,9 @@ signals:
     void loginSuccess(const QString &sessionToken, const QString &maskedEmail);
     void loginFailed(const QString &errorCode, const QString &errorMessage);
 
-    void otpVerifySuccess(const QString &accessToken, const QString &refreshToken, const QJsonObject &user);
+    void otpVerifySuccess(const QString &accessToken,
+                          const QString &refreshToken,
+                          const QJsonObject &user);
     void otpVerifyFailed(const QString &errorCode, const QString &errorMessage);
 
     void registerSuccess(const QString &userId, const QString &email);

@@ -1,9 +1,9 @@
 #include "apimanager.h"
-#include <QHttpMultiPart>
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
+#include <QHttpMultiPart>
 #include <QMimeDatabase>
-#include <QDebug>
 
 ApiManager::ApiManager(QObject *parent)
     : QObject(parent)
@@ -14,13 +14,10 @@ ApiManager::ApiManager(QObject *parent)
     loadTokens();
 
     // Handle SSL errors (for development)
-    connect(m_networkManager, &QNetworkAccessManager::sslErrors,
-            this, &ApiManager::onSslErrors);
+    connect(m_networkManager, &QNetworkAccessManager::sslErrors, this, &ApiManager::onSslErrors);
 }
 
-ApiManager::~ApiManager()
-{
-}
+ApiManager::~ApiManager() {}
 
 // ==================== HELPER METHODS ====================
 
@@ -51,14 +48,17 @@ void ApiManager::handleNetworkError(QNetworkReply *reply)
 QJsonObject ApiManager::parseResponse(QNetworkReply *reply)
 {
     QByteArray data = reply->readAll();
+    qDebug() << "Raw response data:" << data;
     QJsonDocument doc = QJsonDocument::fromJson(data);
 
     if (doc.isNull()) {
-        qDebug() << "Failed to parse JSON response:" << data;
+        qDebug() << "Failed to parse JSON:" << data;
         return QJsonObject();
     }
 
-    return doc.object();
+    QJsonObject obj = doc.object();
+    qDebug() << "Parsed JSON object keys:" << obj.keys();
+    return obj;
 }
 
 void ApiManager::onSslErrors(QNetworkReply *reply, const QList<QSslError> &errors)
@@ -232,8 +232,10 @@ void ApiManager::verifyOtp(const QString &sessionToken, const QString &code)
 
 // ==================== REGISTER ====================
 
-void ApiManager::registerUser(const QString &firstName, const QString &lastName,
-                               const QString &email, const QString &password)
+void ApiManager::registerUser(const QString &firstName,
+                              const QString &lastName,
+                              const QString &email,
+                              const QString &password)
 {
     emit requestStarted();
 
@@ -271,9 +273,6 @@ void ApiManager::registerUser(const QString &firstName, const QString &lastName,
         }
     });
 }
-
-// ==================== FORGOT PASSWORD ====================
-
 // ==================== FORGOT PASSWORD ====================
 
 void ApiManager::forgotPassword(const QString &email)
@@ -291,30 +290,33 @@ void ApiManager::forgotPassword(const QString &email)
         reply->deleteLater();
         emit requestFinished();
 
-        if (reply->error() != QNetworkReply::NoError) {
-            QJsonObject response = parseResponse(reply);
-            if (!response.isEmpty()) {
-                // Check if it's a "user not found" error
-                QString errorCode = response["code"].toString();
-                QString errorMessage = response["message"].toString();
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Forgot Password HTTP status:" << statusCode;
 
-                // Emit failure with the actual error code and message
-                emit forgotPasswordFailed(errorCode, errorMessage);
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "Network error in forgotPassword:" << reply->errorString();
+            QJsonObject response = parseResponse(reply);
+            if (!response.isEmpty() && response.contains("error")) {
+                qDebug() << "Emitting failed with code:" << response["error"].toString();
+                emit forgotPasswordFailed(response["error"].toString(), response["message"].toString());
             } else {
-                emit forgotPasswordFailed("NETWORK_ERROR", reply->errorString());
+                handleNetworkError(reply);
             }
             return;
         }
 
         QJsonObject response = parseResponse(reply);
+        qDebug() << "Parsed response object:" << response;
 
-        if (response["success"].toBool()) {
+        if (!response.isEmpty() && response.contains("success") && response["success"].toBool()) {
+            qDebug() << "Success response detected";
             emit forgotPasswordSuccess(response["message"].toString());
+        } else if (!response.isEmpty() && response.contains("error")) {
+            qDebug() << "Error response detected";
+            emit forgotPasswordFailed(response["error"].toString(), response["message"].toString());
         } else {
-            // Handle errors from successful HTTP response but failed operation
-            QString errorCode = response["code"].toString();
-            QString errorMessage = response["message"].toString();
-            emit forgotPasswordFailed(errorCode, errorMessage);
+            qDebug() << "Unknown response format";
+            emit forgotPasswordFailed("UNKNOWN_ERROR", "Unexpected response from server");
         }
     });
 }
@@ -339,7 +341,8 @@ void ApiManager::resetPassword(const QString &token, const QString &newPassword)
         if (reply->error() != QNetworkReply::NoError) {
             QJsonObject response = parseResponse(reply);
             if (!response.isEmpty()) {
-                emit resetPasswordFailed(response["code"].toString(), response["message"].toString());
+                emit resetPasswordFailed(response["code"].toString(),
+                                         response["message"].toString());
             } else {
                 emit resetPasswordFailed("NETWORK_ERROR", reply->errorString());
             }
@@ -518,7 +521,7 @@ void ApiManager::uploadProfileImage(const QString &filePath)
     imagePart.setHeader(QNetworkRequest::ContentTypeHeader, mimeType);
     imagePart.setHeader(QNetworkRequest::ContentDispositionHeader,
                         QString("form-data; name=\"image\"; filename=\"%1\"")
-                        .arg(QFileInfo(filePath).fileName()));
+                            .arg(QFileInfo(filePath).fileName()));
     imagePart.setBodyDevice(file);
     file->setParent(multiPart); // Ensure file is deleted with multiPart
 

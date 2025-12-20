@@ -1,10 +1,10 @@
 #ifndef AUTHCONTROLLER_H
 #define AUTHCONTROLLER_H
 
-#include <QObject>
 #include <QJsonObject>
-#include "apimanager.h"
+#include <QObject>
 #include <QString>
+#include "apimanager.h"
 class AuthController : public QObject
 {
     Q_OBJECT
@@ -37,8 +37,10 @@ public:
     Q_INVOKABLE void login(const QString &email, const QString &password);
     Q_INVOKABLE void verifyOtp(const QString &code);
     Q_INVOKABLE void resendOtp();
-    Q_INVOKABLE void registerUser(const QString &firstName, const QString &lastName,
-                                  const QString &email, const QString &password);
+    Q_INVOKABLE void registerUser(const QString &firstName,
+                                  const QString &lastName,
+                                  const QString &email,
+                                  const QString &password);
     Q_INVOKABLE void forgotPassword(const QString &email);
     Q_INVOKABLE void resetPassword(const QString &token, const QString &newPassword);
     Q_INVOKABLE void logout();
@@ -58,19 +60,21 @@ signals:
     void userIdChanged();
 
     // Navigation signals (for QML to handle screen transitions)
-    void loginSuccessful();          // Navigate to OTP screen
-    void otpVerified();              // Navigate to dashboard
-    void registrationSuccessful();   // Show success message
-    void passwordResetSent();        // Show confirmation
-    void passwordResetSuccessful();  // Navigate to login
-    void passwordChanged();          // Show confirmation
-    void loggedOut();                // Navigate to login
+    void loginSuccessful();         // Navigate to OTP screen
+    void otpVerified();             // Navigate to dashboard
+    void registrationSuccessful();  // Show success message
+    void passwordResetSent();       // Show confirmation
+    void passwordResetSuccessful(); // Navigate to login
+    void passwordChanged();         // Show confirmation
+    void loggedOut();               // Navigate to login
 
 private slots:
     // Handle API responses
     void onLoginSuccess(const QString &sessionToken, const QString &maskedEmail);
     void onLoginFailed(const QString &errorCode, const QString &errorMessage);
-    void onOtpVerifySuccess(const QString &accessToken, const QString &refreshToken, const QJsonObject &user);
+    void onOtpVerifySuccess(const QString &accessToken,
+                            const QString &refreshToken,
+                            const QJsonObject &user);
     void onOtpVerifyFailed(const QString &errorCode, const QString &errorMessage);
     void onRegisterSuccess(const QString &userId, const QString &email);
     void onRegisterFailed(const QString &errorCode, const QString &errorMessage);

@@ -88,12 +88,12 @@ Rectangle {
                                 height: parent.height - 8
                                 font.pixelSize: 28
                                 font.bold: true
-                                maximumLength: 1
+                                maximumLength: 6
                                 horizontalAlignment: TextInput.AlignHCenter
                                 verticalAlignment: TextInput.AlignVCenter
                                 color: "#1a1a1a"
                                 enabled: !authController || !authController.isLoading
-                                validator: RegularExpressionValidator { regularExpression: /[0-9]/ }
+                                validator: RegularExpressionValidator { regularExpression: /[0-9]*/ }
 
                                 background: Rectangle {
                                     color: "transparent"
@@ -109,12 +109,12 @@ Rectangle {
                                 }
 
                                 onTextChanged: {
-                                    // Handle single character input
+                                    // Handle single character input (հին լոգիկան)
                                     if (text.length === 1) {
                                         if (index < 5) {
                                             root.otpFields[index + 1].forceActiveFocus()
                                         } else {
-                                            // All 6 digits entered
+                                            // All 6 digits entered (վերջին վանդակում)
                                             let code = root.otpFields.map(function(input) {
                                                 return input.text
                                             }).join("")
@@ -123,9 +123,32 @@ Rectangle {
                                             }
                                         }
                                     }
-                                    // Handle paste (multiple characters)
+                                    // Handle paste (multiple characters) — նոր ավելացված
                                     else if (text.length > 1) {
-                                        handlePaste(text)
+                                        let digits = text.replace(/\D/g, '').substring(0, 6)  // Միայն թվեր, առավելագույնը 6
+
+                                        // Լցնել բոլոր վանդակները սկզբից
+                                        for (let i = 0; i < 6; i++) {
+                                            if (i < digits.length) {
+                                                root.otpFields[i].text = digits[i]
+                                            } else {
+                                                root.otpFields[i].text = ""
+                                            }
+                                        }
+
+                                        // Ֆոկուս դնել վերջին լցված վանդակի վրա
+                                        let focusIndex = Math.min(digits.length - 1, 5)
+                                        root.otpFields[focusIndex].forceActiveFocus()
+
+                                        // Եթե 6 թիվ է՝ auto-verify (հին լոգիկայի պես)
+                                        if (digits.length === 6) {
+                                            Qt.callLater(function() {
+                                                authController.verifyOtp(digits)
+                                            })
+                                        }
+
+                                        // Մաքրել այս վանդակը, որովհետև մենք արդեն լցրել ենք առանձին-առանձին
+                                        text = ""
                                     }
                                 }
 
@@ -291,3 +314,4 @@ Rectangle {
         }
     }
 }
+

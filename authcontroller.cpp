@@ -9,47 +9,34 @@ AuthController::AuthController(QObject *parent)
     // Connect API signals to controller slots
 
     // Auth signals
-    connect(m_api, &ApiManager::loginSuccess,
-            this, &AuthController::onLoginSuccess);
-    connect(m_api, &ApiManager::loginFailed,
-            this, &AuthController::onLoginFailed);
+    connect(m_api, &ApiManager::loginSuccess, this, &AuthController::onLoginSuccess);
+    connect(m_api, &ApiManager::loginFailed, this, &AuthController::onLoginFailed);
 
-    connect(m_api, &ApiManager::otpVerifySuccess,
-            this, &AuthController::onOtpVerifySuccess);
-    connect(m_api, &ApiManager::otpVerifyFailed,
-            this, &AuthController::onOtpVerifyFailed);
+    connect(m_api, &ApiManager::otpVerifySuccess, this, &AuthController::onOtpVerifySuccess);
+    connect(m_api, &ApiManager::otpVerifyFailed, this, &AuthController::onOtpVerifyFailed);
 
-    connect(m_api, &ApiManager::registerSuccess,
-            this, &AuthController::onRegisterSuccess);
-    connect(m_api, &ApiManager::registerFailed,
-            this, &AuthController::onRegisterFailed);
+    connect(m_api, &ApiManager::registerSuccess, this, &AuthController::onRegisterSuccess);
+    connect(m_api, &ApiManager::registerFailed, this, &AuthController::onRegisterFailed);
 
-    connect(m_api, &ApiManager::forgotPasswordSuccess,
-            this, &AuthController::onForgotPasswordSuccess);
-    connect(m_api, &ApiManager::forgotPasswordFailed,
-            this, &AuthController::onForgotPasswordFailed);
+    connect(m_api,
+            &ApiManager::forgotPasswordSuccess,
+            this,
+            &AuthController::onForgotPasswordSuccess);
+    connect(m_api, &ApiManager::forgotPasswordFailed, this, &AuthController::onForgotPasswordFailed);
 
-    connect(m_api, &ApiManager::resetPasswordSuccess,
-            this, &AuthController::onResetPasswordSuccess);
-    connect(m_api, &ApiManager::resetPasswordFailed,
-            this, &AuthController::onResetPasswordFailed);
+    connect(m_api, &ApiManager::resetPasswordSuccess, this, &AuthController::onResetPasswordSuccess);
+    connect(m_api, &ApiManager::resetPasswordFailed, this, &AuthController::onResetPasswordFailed);
 
     // Profile signals
-    connect(m_api, &ApiManager::profileLoaded,
-            this, &AuthController::onProfileLoaded);
-    connect(m_api, &ApiManager::profileLoadFailed,
-            this, &AuthController::onProfileLoadFailed);
+    connect(m_api, &ApiManager::profileLoaded, this, &AuthController::onProfileLoaded);
+    connect(m_api, &ApiManager::profileLoadFailed, this, &AuthController::onProfileLoadFailed);
 
-    connect(m_api, &ApiManager::passwordChanged,
-            this, &AuthController::onPasswordChanged);
-    connect(m_api, &ApiManager::passwordChangeFailed,
-            this, &AuthController::onPasswordChangeFailed);
+    connect(m_api, &ApiManager::passwordChanged, this, &AuthController::onPasswordChanged);
+    connect(m_api, &ApiManager::passwordChangeFailed, this, &AuthController::onPasswordChangeFailed);
 
     // Loading state signals
-    connect(m_api, &ApiManager::requestStarted,
-            this, &AuthController::onRequestStarted);
-    connect(m_api, &ApiManager::requestFinished,
-            this, &AuthController::onRequestFinished);
+    connect(m_api, &ApiManager::requestStarted, this, &AuthController::onRequestStarted);
+    connect(m_api, &ApiManager::requestFinished, this, &AuthController::onRequestFinished);
 
     // If already logged in, load user profile
     if (m_api->isLoggedIn()) {
@@ -57,9 +44,7 @@ AuthController::AuthController(QObject *parent)
     }
 }
 
-AuthController::~AuthController()
-{
-}
+AuthController::~AuthController() {}
 
 // ==================== HELPER METHODS ====================
 
@@ -111,8 +96,6 @@ void AuthController::setUserFromJson(const QJsonObject &user)
         emit userIdChanged();
     }
 }
-
-
 
 // ==================== PUBLIC METHODS (Q_INVOKABLE) ====================
 
@@ -170,8 +153,10 @@ void AuthController::resendOtp()
     m_api->login(m_lastEmail, m_lastPassword);
 }
 
-void AuthController::registerUser(const QString &firstName, const QString &lastName,
-                                   const QString &email, const QString &password)
+void AuthController::registerUser(const QString &firstName,
+                                  const QString &lastName,
+                                  const QString &email,
+                                  const QString &password)
 {
     clearError();
 
@@ -196,8 +181,7 @@ void AuthController::registerUser(const QString &firstName, const QString &lastN
         return;
     }
 
-    m_api->registerUser(firstName.trimmed(), lastName.trimmed(),
-                        email.trimmed(), password);
+    m_api->registerUser(firstName.trimmed(), lastName.trimmed(), email.trimmed(), password);
 }
 
 void AuthController::forgotPassword(const QString &email)
@@ -303,8 +287,9 @@ void AuthController::onLoginFailed(const QString &errorCode, const QString &erro
     setError(formatError(errorCode, errorMessage));
 }
 
-void AuthController::onOtpVerifySuccess(const QString &accessToken, const QString &refreshToken,
-                                         const QJsonObject &user)
+void AuthController::onOtpVerifySuccess(const QString &accessToken,
+                                        const QString &refreshToken,
+                                        const QJsonObject &user)
 {
     Q_UNUSED(accessToken)
     Q_UNUSED(refreshToken)
@@ -396,23 +381,24 @@ QString AuthController::formatError(const QString &code, const QString &message)
 {
     // Map error codes to user-friendly messages
     static const QMap<QString, QString> errorMessages = {
-                                                         {"INVALID_CREDENTIALS", "Invalid email or password. Please try again."},
-                                                         {"INVALID_OTP", "Invalid verification code. Please check and try again."},
-                                                         {"OTP_EXPIRED", "Verification code has expired. Please request a new one."},
-                                                         {"OTP_MAX_ATTEMPTS", "Too many failed attempts. Please request a new code."},
-                                                         {"ACCOUNT_SUSPENDED", "Your account has been suspended. Please contact support."},
-                                                         {"ACCOUNT_PENDING", "Your account is pending approval. Please wait for admin activation."},
-                                                         {"ACCOUNT_INACTIVE", "Your account is inactive. Please contact support."},
-                                                         {"EMAIL_EXISTS", "This email is already registered. Try logging in instead."},
-                                                         {"USER_NOT_FOUND", "No account found with this email address."},
-                                                         {"EMAIL_NOT_FOUND", "No account found with this email address."},
-                                                         {"INVALID_TOKEN", "Invalid or expired token. Please try again."},
-                                                         {"INVALID_PASSWORD", "Current password is incorrect."},
-                                                         {"WEAK_PASSWORD", "Password is too weak. Use at least 8 characters with letters and numbers."},
-                                                         {"RATE_LIMITED", "Too many requests. Please wait a moment and try again."},
-                                                         {"NETWORK_ERROR", "Unable to connect. Please check your internet connection."},
-                                                         {"SERVER_ERROR", "Server error. Please try again later."},
-                                                         };
+        {"INVALID_CREDENTIALS", "Invalid email or password. Please try again."},
+        {"INVALID_OTP", "Invalid verification code. Please check and try again."},
+        {"OTP_EXPIRED", "Verification code has expired. Please request a new one."},
+        {"OTP_MAX_ATTEMPTS", "Too many failed attempts. Please request a new code."},
+        {"ACCOUNT_SUSPENDED", "Your account has been suspended. Please contact support."},
+        {"ACCOUNT_PENDING", "Your account is pending approval. Please wait for admin activation."},
+        {"ACCOUNT_INACTIVE", "Your account is inactive. Please contact support."},
+        {"EMAIL_EXISTS", "This email is already registered. Try logging in instead."},
+        {"USER_NOT_FOUND", "No account found with this email address."},
+        {"EMAIL_NOT_FOUND", "No account found with this email address."},
+        {"INVALID_TOKEN", "Invalid or expired token. Please try again."},
+        {"INVALID_PASSWORD", "Current password is incorrect."},
+        {"WEAK_PASSWORD",
+         "Password is too weak. Use at least 8 characters with letters and numbers."},
+        {"RATE_LIMITED", "Too many requests. Please wait a moment and try again."},
+        {"NETWORK_ERROR", "Unable to connect. Please check your internet connection."},
+        {"SERVER_ERROR", "Server error. Please try again later."},
+    };
 
     if (errorMessages.contains(code)) {
         return errorMessages[code];
