@@ -10,27 +10,22 @@ ApiManager::ApiManager(QObject *parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_baseUrl("https://learning-dashboard-rouge.vercel.app")
 {
-    // Load saved tokens on startup
     loadTokens();
 
-    // Handle SSL errors (for development)
     connect(m_networkManager, &QNetworkAccessManager::sslErrors, this, &ApiManager::onSslErrors);
 }
 
 ApiManager::~ApiManager() {}
 
-// ==================== HELPER METHODS ====================
 
 QNetworkRequest ApiManager::createRequest(const QString &endpoint, bool withAuth)
 {
     QUrl url(m_baseUrl + endpoint);
     QNetworkRequest request(url);
 
-    // Set headers
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Accept", "application/json");
 
-    // Add authorization header if required
     if (withAuth && !m_accessToken.isEmpty()) {
         request.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     }
@@ -63,15 +58,12 @@ QJsonObject ApiManager::parseResponse(QNetworkReply *reply)
 
 void ApiManager::onSslErrors(QNetworkReply *reply, const QList<QSslError> &errors)
 {
-    // Log SSL errors but ignore them for development
     for (const QSslError &error : errors) {
         qDebug() << "SSL Error:" << error.errorString();
     }
-    // WARNING: Only ignore SSL errors in development!
-    // reply->ignoreSslErrors();
+
 }
 
-// ==================== CONFIGURATION ====================
 
 void ApiManager::setBaseUrl(const QString &url)
 {
@@ -83,7 +75,6 @@ QString ApiManager::baseUrl() const
     return m_baseUrl;
 }
 
-// ==================== TOKEN MANAGEMENT ====================
 
 void ApiManager::setAccessToken(const QString &token)
 {
@@ -142,7 +133,6 @@ void ApiManager::clearTokens()
     settings.sync();
 }
 
-// ==================== LOGIN ====================
 
 void ApiManager::login(const QString &email, const QString &password)
 {
@@ -161,7 +151,6 @@ void ApiManager::login(const QString &email, const QString &password)
         emit requestFinished();
 
         if (reply->error() != QNetworkReply::NoError) {
-            // Try to parse error response
             QJsonObject response = parseResponse(reply);
             if (!response.isEmpty()) {
                 emit loginFailed(response["code"].toString(), response["message"].toString());
@@ -184,7 +173,6 @@ void ApiManager::login(const QString &email, const QString &password)
     });
 }
 
-// ==================== VERIFY OTP ====================
 
 void ApiManager::verifyOtp(const QString &sessionToken, const QString &code)
 {
@@ -217,7 +205,6 @@ void ApiManager::verifyOtp(const QString &sessionToken, const QString &code)
         if (response["success"].toBool()) {
             QJsonObject data = response["data"].toObject();
 
-            // Store tokens
             m_accessToken = data["accessToken"].toString();
             m_refreshToken = data["refreshToken"].toString();
             saveTokens();
@@ -230,7 +217,6 @@ void ApiManager::verifyOtp(const QString &sessionToken, const QString &code)
     });
 }
 
-// ==================== REGISTER ====================
 
 void ApiManager::registerUser(const QString &firstName,
                               const QString &lastName,
@@ -273,7 +259,6 @@ void ApiManager::registerUser(const QString &firstName,
         }
     });
 }
-// ==================== FORGOT PASSWORD ====================
 
 void ApiManager::forgotPassword(const QString &email)
 {
@@ -320,7 +305,6 @@ void ApiManager::forgotPassword(const QString &email)
         }
     });
 }
-// ==================== RESET PASSWORD ====================
 
 void ApiManager::resetPassword(const QString &token, const QString &newPassword)
 {
@@ -359,7 +343,6 @@ void ApiManager::resetPassword(const QString &token, const QString &newPassword)
     });
 }
 
-// ==================== REFRESH TOKEN ====================
 
 void ApiManager::refreshAccessToken()
 {
@@ -396,7 +379,6 @@ void ApiManager::refreshAccessToken()
     });
 }
 
-// ==================== GET PROFILE ====================
 
 void ApiManager::getProfile()
 {
@@ -411,7 +393,6 @@ void ApiManager::getProfile()
         emit requestFinished();
 
         if (reply->error() != QNetworkReply::NoError) {
-            // Check if it's an auth error - try to refresh token
             if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
                 refreshAccessToken();
             }
@@ -429,7 +410,6 @@ void ApiManager::getProfile()
     });
 }
 
-// ==================== UPDATE PROFILE ====================
 
 void ApiManager::updateProfile(const QJsonObject &data)
 {
@@ -458,7 +438,6 @@ void ApiManager::updateProfile(const QJsonObject &data)
     });
 }
 
-// ==================== CHANGE PASSWORD ====================
 
 void ApiManager::changePassword(const QString &currentPassword, const QString &newPassword)
 {
@@ -496,7 +475,6 @@ void ApiManager::changePassword(const QString &currentPassword, const QString &n
     });
 }
 
-// ==================== UPLOAD PROFILE IMAGE ====================
 
 void ApiManager::uploadProfileImage(const QString &filePath)
 {
@@ -512,18 +490,16 @@ void ApiManager::uploadProfileImage(const QString &filePath)
 
     QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
-    // Get MIME type
     QMimeDatabase mimeDb;
     QString mimeType = mimeDb.mimeTypeForFile(filePath).name();
 
-    // Create file part
     QHttpPart imagePart;
     imagePart.setHeader(QNetworkRequest::ContentTypeHeader, mimeType);
     imagePart.setHeader(QNetworkRequest::ContentDispositionHeader,
                         QString("form-data; name=\"image\"; filename=\"%1\"")
                             .arg(QFileInfo(filePath).fileName()));
     imagePart.setBodyDevice(file);
-    file->setParent(multiPart); // Ensure file is deleted with multiPart
+    file->setParent(multiPart);
 
     multiPart->append(imagePart);
 
@@ -532,7 +508,7 @@ void ApiManager::uploadProfileImage(const QString &filePath)
     request.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
 
     QNetworkReply *reply = m_networkManager->post(request, multiPart);
-    multiPart->setParent(reply); // Ensure multiPart is deleted with reply
+    multiPart->setParent(reply);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
@@ -553,8 +529,6 @@ void ApiManager::uploadProfileImage(const QString &filePath)
         }
     });
 }
-
-// ==================== REMOVE PROFILE IMAGE ====================
 
 void ApiManager::removeProfileImage()
 {

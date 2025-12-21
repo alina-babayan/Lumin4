@@ -20,7 +20,6 @@ public:
     explicit ApiManager(QObject *parent = nullptr);
     ~ApiManager();
 
-    // ==================== AUTH ENDPOINTS ====================
     void login(const QString &email, const QString &password);
     void verifyOtp(const QString &sessionToken, const QString &code);
     void registerUser(const QString &firstName,
@@ -31,14 +30,12 @@ public:
     void resetPassword(const QString &token, const QString &newPassword);
     void refreshAccessToken();
 
-    // ==================== USER ENDPOINTS ====================
     void getProfile();
     void updateProfile(const QJsonObject &data);
     void changePassword(const QString &currentPassword, const QString &newPassword);
     void uploadProfileImage(const QString &filePath);
     void removeProfileImage();
 
-    // ==================== TOKEN MANAGEMENT ====================
     void setAccessToken(const QString &token);
     void setRefreshToken(const QString &token);
     QString accessToken() const;
@@ -48,12 +45,10 @@ public:
     void loadTokens();
     void clearTokens();
 
-    // ==================== CONFIGURATION ====================
     void setBaseUrl(const QString &url);
     QString baseUrl() const;
 
 signals:
-    // Auth signals
     void loginSuccess(const QString &sessionToken, const QString &maskedEmail);
     void loginFailed(const QString &errorCode, const QString &errorMessage);
 
@@ -74,7 +69,6 @@ signals:
     void tokenRefreshed(const QString &newAccessToken);
     void tokenRefreshFailed();
 
-    // User signals
     void profileLoaded(const QJsonObject &user);
     void profileLoadFailed(const QString &errorMessage);
 
@@ -90,7 +84,6 @@ signals:
     void profileImageRemoved();
     void profileImageRemoveFailed(const QString &errorMessage);
 
-    // General signals
     void requestStarted();
     void requestFinished();
     void networkError(const QString &errorMessage);
@@ -101,7 +94,6 @@ private:
     QString m_accessToken;
     QString m_refreshToken;
 
-    // Helper methods
     QNetworkRequest createRequest(const QString &endpoint, bool withAuth = false);
     void handleNetworkError(QNetworkReply *reply);
     QJsonObject parseResponse(QNetworkReply *reply);

@@ -9,7 +9,6 @@ class AuthController : public QObject
 {
     Q_OBJECT
 
-    // Properties exposed to QML
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
@@ -23,7 +22,6 @@ public:
     explicit AuthController(QObject *parent = nullptr);
     ~AuthController();
 
-    // Property getters
     bool isLoading() const { return m_isLoading; }
     bool isLoggedIn() const { return m_api->isLoggedIn(); }
     QString errorMessage() const { return m_errorMessage; }
@@ -33,7 +31,6 @@ public:
     QString userImage() const { return m_userImage; }
     QString userId() const { return m_userId; }
 
-    // Methods exposed to QML
     Q_INVOKABLE void login(const QString &email, const QString &password);
     Q_INVOKABLE void verifyOtp(const QString &code);
     Q_INVOKABLE void resendOtp();
@@ -49,7 +46,6 @@ public:
     Q_INVOKABLE void changePassword(const QString &currentPassword, const QString &newPassword);
 
 signals:
-    // Property change signals
     void isLoadingChanged();
     void isLoggedInChanged();
     void errorMessageChanged();
@@ -59,17 +55,15 @@ signals:
     void userImageChanged();
     void userIdChanged();
 
-    // Navigation signals (for QML to handle screen transitions)
-    void loginSuccessful();         // Navigate to OTP screen
-    void otpVerified();             // Navigate to dashboard
-    void registrationSuccessful();  // Show success message
-    void passwordResetSent();       // Show confirmation
-    void passwordResetSuccessful(); // Navigate to login
-    void passwordChanged();         // Show confirmation
-    void loggedOut();               // Navigate to login
+    void loginSuccessful();
+    void otpVerified();
+    void registrationSuccessful();
+    void passwordResetSent();
+    void passwordResetSuccessful();
+    void passwordChanged();
+    void loggedOut();
 
 private slots:
-    // Handle API responses
     void onLoginSuccess(const QString &sessionToken, const QString &maskedEmail);
     void onLoginFailed(const QString &errorCode, const QString &errorMessage);
     void onOtpVerifySuccess(const QString &accessToken,
@@ -92,23 +86,19 @@ private slots:
 private:
     ApiManager *m_api;
 
-    // State
     bool m_isLoading;
     QString m_errorMessage;
     QString m_sessionToken;
     QString m_maskedEmail;
 
-    // User info
     QString m_userName;
     QString m_userEmail;
     QString m_userImage;
     QString m_userId;
 
-    // Cached credentials for resend
     QString m_lastEmail;
     QString m_lastPassword;
 
-    // Helper methods
     void setLoading(bool loading);
     void setError(const QString &error);
     void setUserFromJson(const QJsonObject &user);

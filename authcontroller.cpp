@@ -6,9 +6,7 @@ AuthController::AuthController(QObject *parent)
     , m_api(new ApiManager(this))
     , m_isLoading(false)
 {
-    // Connect API signals to controller slots
 
-    // Auth signals
     connect(m_api, &ApiManager::loginSuccess, this, &AuthController::onLoginSuccess);
     connect(m_api, &ApiManager::loginFailed, this, &AuthController::onLoginFailed);
 
@@ -27,26 +25,21 @@ AuthController::AuthController(QObject *parent)
     connect(m_api, &ApiManager::resetPasswordSuccess, this, &AuthController::onResetPasswordSuccess);
     connect(m_api, &ApiManager::resetPasswordFailed, this, &AuthController::onResetPasswordFailed);
 
-    // Profile signals
     connect(m_api, &ApiManager::profileLoaded, this, &AuthController::onProfileLoaded);
     connect(m_api, &ApiManager::profileLoadFailed, this, &AuthController::onProfileLoadFailed);
 
     connect(m_api, &ApiManager::passwordChanged, this, &AuthController::onPasswordChanged);
     connect(m_api, &ApiManager::passwordChangeFailed, this, &AuthController::onPasswordChangeFailed);
 
-    // Loading state signals
     connect(m_api, &ApiManager::requestStarted, this, &AuthController::onRequestStarted);
     connect(m_api, &ApiManager::requestFinished, this, &AuthController::onRequestFinished);
 
-    // If already logged in, load user profile
     if (m_api->isLoggedIn()) {
         loadProfile();
     }
 }
 
 AuthController::~AuthController() {}
-
-// ==================== HELPER METHODS ====================
 
 void AuthController::setLoading(bool loading)
 {
@@ -97,13 +90,10 @@ void AuthController::setUserFromJson(const QJsonObject &user)
     }
 }
 
-// ==================== PUBLIC METHODS (Q_INVOKABLE) ====================
-
 void AuthController::login(const QString &email, const QString &password)
 {
     clearError();
 
-    // Validate input
     if (email.trimmed().isEmpty()) {
         setError("Please enter your email address.");
         return;
@@ -114,7 +104,6 @@ void AuthController::login(const QString &email, const QString &password)
         return;
     }
 
-    // Store credentials for potential resend
     m_lastEmail = email.trimmed();
     m_lastPassword = password;
 
@@ -149,7 +138,6 @@ void AuthController::resendOtp()
         return;
     }
 
-    // Re-trigger login to get a new OTP
     m_api->login(m_lastEmail, m_lastPassword);
 }
 
@@ -160,7 +148,6 @@ void AuthController::registerUser(const QString &firstName,
 {
     clearError();
 
-    // Validate input
     if (firstName.trimmed().length() < 2) {
         setError("First name must be at least 2 characters.");
         return;
@@ -215,7 +202,6 @@ void AuthController::resetPassword(const QString &token, const QString &newPassw
 
 void AuthController::logout()
 {
-    // Clear all user data
     m_api->clearTokens();
 
     m_sessionToken.clear();
@@ -268,7 +254,6 @@ void AuthController::changePassword(const QString &currentPassword, const QStrin
     m_api->changePassword(currentPassword, newPassword);
 }
 
-// ==================== PRIVATE SLOTS (API Response Handlers) ====================
 
 void AuthController::onLoginSuccess(const QString &sessionToken, const QString &maskedEmail)
 {
@@ -294,11 +279,9 @@ void AuthController::onOtpVerifySuccess(const QString &accessToken,
     Q_UNUSED(accessToken)
     Q_UNUSED(refreshToken)
 
-    // Clear sensitive data
     m_lastPassword.clear();
     m_sessionToken.clear();
 
-    // Set user info
     setUserFromJson(user);
 
     emit isLoggedInChanged();
@@ -352,7 +335,6 @@ void AuthController::onProfileLoaded(const QJsonObject &user)
 void AuthController::onProfileLoadFailed(const QString &errorMessage)
 {
     qDebug() << "Failed to load profile:" << errorMessage;
-    // Don't show error to user - profile loading is a background operation
 }
 
 void AuthController::onPasswordChanged()
@@ -374,12 +356,9 @@ void AuthController::onRequestFinished()
 {
     setLoading(false);
 }
-// Complete formatError function - place this ONCE in authcontroller.cpp
-// Replace your existing formatError function with this
 
 QString AuthController::formatError(const QString &code, const QString &message)
 {
-    // Map error codes to user-friendly messages
     static const QMap<QString, QString> errorMessages = {
         {"INVALID_CREDENTIALS", "Invalid email or password. Please try again."},
         {"INVALID_OTP", "Invalid verification code. Please check and try again."},
@@ -404,7 +383,6 @@ QString AuthController::formatError(const QString &code, const QString &message)
         return errorMessages[code];
     }
 
-    // If no mapping found, return the original message or a generic error
     if (!message.isEmpty()) {
         return message;
     }
