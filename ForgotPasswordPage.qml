@@ -15,13 +15,13 @@ Rectangle {
         spacing: 0
 
         Rectangle {
-            Layout.preferredWidth: 700
+            Layout.fillWidth: true
             Layout.fillHeight: true
             color: "white"
 
             Column {
                 anchors.centerIn: parent
-                width: 440
+                width: Math.min(440, parent.width - 64)
                 spacing: 32
 
                 Rectangle {
@@ -170,8 +170,7 @@ Rectangle {
             Image {
                 source: "qrc:new/prefix1/first"
                 anchors.fill: parent
-                fillMode: Image.PreserveAspectCrop
-                anchors.centerIn: parent
+                fillMode: Image.PreserveAspectFit
             }
         }
     }
@@ -180,7 +179,6 @@ Rectangle {
         target: authController
         function onPasswordResetSent() {
             root.emailSent = true
-            // Auto-hide success message and go back after 3 seconds
             successTimer.start()
         }
     }

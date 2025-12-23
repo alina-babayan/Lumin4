@@ -1,13 +1,12 @@
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
-#include <QIcon>
 #include "authcontroller.h"
 
 int main(int argc, char *argv[])
 {
-
     QGuiApplication app(argc, argv);
 
     app.setOrganizationName("PicsartAcademy");
@@ -16,7 +15,6 @@ int main(int argc, char *argv[])
     app.setApplicationDisplayName("Picsart Academy - Lumin");
     app.setApplicationVersion("1.0.0");
 
-
     QQuickStyle::setStyle("Material");
 
     QQmlApplicationEngine engine;
@@ -24,19 +22,26 @@ int main(int argc, char *argv[])
     AuthController authController;
     engine.rootContext()->setContextProperty("authController", &authController);
 
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
-        &app, []() { QCoreApplication::exit(-1); },
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreationFailed,
+        &app,
+        []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
 
     const QUrl url(QStringLiteral("qrc:/new/prefix1/Main.qml"));
 
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-        &app, [url](QObject *obj, const QUrl &objUrl) {
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreated,
+        &app,
+        [url](QObject *obj, const QUrl &objUrl) {
             if (!obj && url == objUrl) {
                 qCritical() << "Failed to load QML file:" << url;
                 QCoreApplication::exit(-1);
             }
-        }, Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
 
     engine.load(url);
 

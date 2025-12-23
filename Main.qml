@@ -21,7 +21,6 @@ ApplicationWindow {
         }
     }
 
-    // Page components
     Component {
         id: loginPageComponent
         LoginPage {
@@ -57,7 +56,6 @@ ApplicationWindow {
         DashboardPage {}
     }
 
-    // Success Dialog
     SuccessDialog {
         id: successDialog
         onAccepted: {
@@ -66,7 +64,6 @@ ApplicationWindow {
         }
     }
 
-    // Navigation connections
     Connections {
         target: authController
 

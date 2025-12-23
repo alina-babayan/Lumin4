@@ -14,7 +14,6 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        // LEFT
         Rectangle {
             Layout.preferredWidth: 700
             Layout.fillHeight: true
@@ -88,12 +87,12 @@ Rectangle {
                                 height: parent.height - 8
                                 font.pixelSize: 28
                                 font.bold: true
-                                maximumLength: 1
+                                maximumLength: 6
                                 horizontalAlignment: TextInput.AlignHCenter
                                 verticalAlignment: TextInput.AlignVCenter
                                 color: "#1a1a1a"
                                 enabled: !authController || !authController.isLoading
-                                validator: RegularExpressionValidator { regularExpression: /[0-9]/ }
+                                validator: RegularExpressionValidator { regularExpression: /[0-9]*/ }
 
                                 background: Rectangle {
                                     color: "transparent"
@@ -109,12 +108,10 @@ Rectangle {
                                 }
 
                                 onTextChanged: {
-                                    // Handle single character input
                                     if (text.length === 1) {
                                         if (index < 5) {
                                             root.otpFields[index + 1].forceActiveFocus()
                                         } else {
-                                            // All 6 digits entered
                                             let code = root.otpFields.map(function(input) {
                                                 return input.text
                                             }).join("")
@@ -123,9 +120,27 @@ Rectangle {
                                             }
                                         }
                                     }
-                                    // Handle paste (multiple characters)
                                     else if (text.length > 1) {
-                                        handlePaste(text)
+                                        let digits = text.replace(/\D/g, '').substring(0, 6)
+
+                                        for (let i = 0; i < 6; i++) {
+                                            if (i < digits.length) {
+                                                root.otpFields[i].text = digits[i]
+                                            } else {
+                                                root.otpFields[i].text = ""
+                                            }
+                                        }
+
+                                        let focusIndex = Math.min(digits.length - 1, 5)
+                                        root.otpFields[focusIndex].forceActiveFocus()
+
+                                        if (digits.length === 6) {
+                                            Qt.callLater(function() {
+                                                authController.verifyOtp(digits)
+                                            })
+                                        }
+
+                                        text = ""
                                     }
                                 }
 
@@ -140,30 +155,24 @@ Rectangle {
                                 }
 
                                 function handlePaste(pastedText) {
-                                    // Extract only digits from pasted text
                                     let digits = pastedText.replace(/\D/g, '')
 
                                     if (digits.length === 0) return
 
-                                    // Clear all fields first
                                     for (let i = 0; i < 6; i++) {
                                         root.otpFields[i].text = ""
                                     }
 
-                                    // Fill boxes one by one from the beginning
                                     for (let i = 0; i < Math.min(digits.length, 6); i++) {
                                         root.otpFields[i].text = digits.charAt(i)
                                     }
 
-                                    // Focus and verify
                                     if (digits.length >= 6) {
                                         root.otpFields[5].forceActiveFocus()
-                                        // Automatically verify the code
                                         Qt.callLater(function() {
                                             authController.verifyOtp(digits.substring(0, 6))
                                         })
                                     } else {
-                                        // Focus the next empty field
                                         let nextIndex = Math.min(digits.length, 5)
                                         root.otpFields[nextIndex].forceActiveFocus()
                                     }
@@ -291,3 +300,4 @@ Rectangle {
         }
     }
 }
+
