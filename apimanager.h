@@ -36,6 +36,9 @@ public:
     void uploadProfileImage(const QString &filePath);
     void removeProfileImage();
 
+    // ==================== DASHBOARD ENDPOINTS ====================
+    void getDashboardStats();
+
     // ==================== TOKEN MANAGEMENT ====================
     void setAccessToken(const QString &token);
     void setRefreshToken(const QString &token);
@@ -85,6 +88,10 @@ signals:
 
     void profileImageRemoved();
     void profileImageRemoveFailed(const QString &errorMessage);
+
+    // Dashboard signals
+    void dashboardStatsLoaded(const QJsonObject &stats);
+    void dashboardStatsLoadFailed(const QString &errorMessage);
 
     // General signals
     void requestStarted();

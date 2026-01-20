@@ -7,13 +7,15 @@ CONFIG += c++17
 # DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000
 
 SOURCES += \
+    dashboardcontroller.cpp \
     main.cpp \
     apimanager.cpp \
     authcontroller.cpp
 
 HEADERS += \
     apimanager.h \
-    authcontroller.h
+    authcontroller.h \
+    dashboardcontroller.h
 
 RESOURCES += qml.qrc
 

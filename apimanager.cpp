@@ -579,3 +579,43 @@ void ApiManager::removeProfileImage()
         }
     });
 }
+// Add this to your apimanager.cpp file
+
+// ==================== GET DASHBOARD STATS ====================
+
+void ApiManager::getDashboardStats()
+{
+    emit requestStarted();
+
+    QNetworkRequest request = createRequest("/api/dashboard/stats", true);
+
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            // Check if it's an auth error - try to refresh token
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit dashboardStatsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit dashboardStatsLoaded(response["data"].toObject());
+        } else {
+            emit dashboardStatsLoadFailed(response["message"].toString());
+        }
+    });
+}
