@@ -14,7 +14,6 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        // LEFT - Form
         Rectangle {
             Layout.preferredWidth: 700
             Layout.fillHeight: true
@@ -25,7 +24,6 @@ Rectangle {
                 width: 440
                 spacing: 32
 
-                // LOGO
                 Rectangle {
                     width: 56; height: 56; radius: 12; color: "#1a1a1a"
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -35,7 +33,6 @@ Rectangle {
                     }
                 }
 
-                // TITLE
                 Column {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: 8
@@ -54,7 +51,6 @@ Rectangle {
                     }
                 }
 
-                // ERROR MESSAGE
                 Rectangle {
                     width: parent.width
                     height: 52
@@ -72,12 +68,10 @@ Rectangle {
                     }
                 }
 
-                // FORM
                 Column {
                     width: parent.width
                     spacing: 20
 
-                    // EMAIL
                     Column {
                         width: parent.width
                         spacing: 8
@@ -106,7 +100,6 @@ Rectangle {
                         }
                     }
 
-                    // PASSWORD
                     Column {
                         id: passwordColumn
                         width: parent.width
@@ -181,7 +174,6 @@ Rectangle {
                         }
                     }
 
-                    // FORGOT PASSWORD
                     RowLayout {
                         width: parent.width
                         spacing: 0
@@ -201,7 +193,6 @@ Rectangle {
                         }
                     }
 
-                    // LOGIN BUTTON
                     Button {
                         text: (authController && authController.isLoading) ? "Logging in..." : "Login"
                         width: parent.width
@@ -226,7 +217,6 @@ Rectangle {
                         }
                     }
 
-                    // REGISTER LINK
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
                         spacing: 4
@@ -253,7 +243,6 @@ Rectangle {
             }
         }
 
-        // RIGHT - Illustration
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true

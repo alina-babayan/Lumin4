@@ -17,7 +17,6 @@ DashboardController::DashboardController(QObject *parent)
     , m_totalRevenue(0.0)
     , m_monthlyRevenue(0.0)
 {
-    // Connect API signals
     connect(m_api, &ApiManager::dashboardStatsLoaded,
             this, &DashboardController::onStatsLoaded);
     connect(m_api, &ApiManager::dashboardStatsLoadFailed,
@@ -33,7 +32,6 @@ DashboardController::~DashboardController()
 {
 }
 
-// ==================== HELPER METHODS ====================
 
 void DashboardController::setLoading(bool loading)
 {
@@ -67,7 +65,6 @@ QString DashboardController::formattedMonthlyRevenue() const
     return formatCurrency(m_monthlyRevenue);
 }
 
-// ==================== PUBLIC METHODS ====================
 
 void DashboardController::loadStats()
 {
@@ -80,28 +77,23 @@ void DashboardController::clearError()
     setError("");
 }
 
-// ==================== PRIVATE SLOTS ====================
 
 void DashboardController::onStatsLoaded(const QJsonObject &stats)
 {
-    // Parse instructors
     QJsonObject instructors = stats["instructors"].toObject();
     m_totalInstructors = instructors["total"].toInt();
     m_verifiedInstructors = instructors["verified"].toInt();
     m_pendingInstructors = instructors["pending"].toInt();
 
-    // Parse students
     QJsonObject students = stats["students"].toObject();
     m_totalStudents = students["total"].toInt();
     m_activeStudents = students["active"].toInt();
 
-    // Parse courses
     QJsonObject courses = stats["courses"].toObject();
     m_totalCourses = courses["total"].toInt();
     m_activeCourses = courses["active"].toInt();
     m_draftCourses = courses["draft"].toInt();
 
-    // Parse revenue
     QJsonObject revenue = stats["revenue"].toObject();
     m_totalRevenue = revenue["total"].toDouble();
     m_monthlyRevenue = revenue["thisMonth"].toDouble();

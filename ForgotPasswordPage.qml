@@ -180,7 +180,6 @@ Rectangle {
         target: authController
         function onPasswordResetSent() {
             root.emailSent = true
-            // Auto-hide success message and go back after 3 seconds
             successTimer.start()
         }
     }

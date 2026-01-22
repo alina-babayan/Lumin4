@@ -1,4 +1,3 @@
-// Save this as DashboardPageNew.qml
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -9,18 +8,95 @@ Rectangle {
     color: "#FAFAFA"
 
     signal logout()
+    signal navigateToInstructors()
+
+    property var pendingInstructors: []
+    property int totalPending: 0
+    property var recentActivities: []
+    property int totalActivities: 0
+    property int activitiesLimit: 10
+    property bool loadingActivities: false
 
     Component.onCompleted: {
-        dashboardController.loadStats()
+        if (dashboardController) {
+            dashboardController.loadStats()
+        }
+        loadPendingInstructors()
+        loadRecentActivities()
+    }
+
+    function loadPendingInstructors() {
+        var xhr = new XMLHttpRequest()
+        xhr.open("GET", "https://learning-dashboard-rouge.vercel.app/api/instructors?status=pending")
+        xhr.setRequestHeader("Authorization", "Bearer " + (authController ? authController.accessToken : ""))
+        xhr.setRequestHeader("Accept", "application/json")
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    try {
+                        var response = JSON.parse(xhr.responseText)
+                        if (response.success) {
+                            pendingInstructors = response.data.instructors.slice(0, 5)
+                            totalPending = response.data.stats.pending || response.data.instructors.length
+                        }
+                    } catch (e) {
+                        console.log("Failed to parse instructors:", e)
+                    }
+                }
+            }
+        }
+        xhr.send()
+    }
+
+    function getRelativeTime(isoDate) {
+        var now = new Date()
+        var date = new Date(isoDate)
+        var seconds = Math.floor((now - date) / 1000)
+
+        if (seconds < 60) return "just now"
+        if (seconds < 3600) return Math.floor(seconds / 60) + " minutes ago"
+        if (seconds < 86400) return Math.floor(seconds / 3600) + " hours ago"
+        if (seconds < 2592000) return Math.floor(seconds / 86400) + " days ago"
+        return Math.floor(seconds / 2592000) + " months ago"
+    }
+
+    function getInitials(firstName, lastName) {
+        return ((firstName || "").charAt(0) + (lastName || "").charAt(0)).toUpperCase()
+    }
+
+    function loadRecentActivities() {
+        loadingActivities = true
+        var xhr = new XMLHttpRequest()
+        xhr.open("GET", "https://learning-dashboard-rouge.vercel.app/api/dashboard/activity?limit=" + activitiesLimit)
+        xhr.setRequestHeader("Authorization", "Bearer " + (authController ? authController.accessToken : ""))
+        xhr.setRequestHeader("Accept", "application/json")
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                loadingActivities = false
+                if (xhr.status === 200) {
+                    try {
+                        var response = JSON.parse(xhr.responseText)
+                        if (response.success) {
+                            recentActivities = response.data.activities
+                            totalActivities = response.data.total
+                        }
+                    } catch (e) {
+                        console.log("Failed to parse activities:", e)
+                    }
+                }
+            }
+        }
+        xhr.send()
     }
 
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // LEFT SIDEBAR
         Rectangle {
-            Layout.preferredWidth: 280
+            Layout.preferredWidth: 240
             Layout.fillHeight: true
             color: "white"
 
@@ -33,24 +109,19 @@ Rectangle {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.topMargin: 24
-                anchors.bottomMargin: 24
+                anchors.margins: 20
                 spacing: 0
 
-                // Logo Header
                 RowLayout {
                     Layout.fillWidth: true
-                    Layout.leftMargin: 24
-                    Layout.rightMargin: 24
                     Layout.bottomMargin: 32
-                    spacing: 12
+                    spacing: 10
 
                     Rectangle {
                         width: 32
                         height: 32
                         radius: 6
                         color: "#18181B"
-
                         Text {
                             text: "L"
                             color: "white"
@@ -63,221 +134,124 @@ Rectangle {
                     Text {
                         text: "Lumin Admin Panel"
                         color: "#18181B"
-                        font.pixelSize: 16
+                        font.pixelSize: 15
                         font.weight: Font.DemiBold
-                    }
-
-                    Item { Layout.fillWidth: true }
-
-                    Rectangle {
-                        width: 32
-                        height: 32
-                        radius: 6
-                        color: navToggleMA.containsMouse ? "#F3F4F6" : "transparent"
-
-                        Text {
-                            text: "☰"
-                            color: "#6B7280"
-                            font.pixelSize: 16
-                            anchors.centerIn: parent
-                        }
-
-                        MouseArea {
-                            id: navToggleMA
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                        }
                     }
                 }
 
-                // Navigation Items
                 ColumnLayout {
                     Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
                     spacing: 4
 
-                    // Dashboard
                     Rectangle {
                         Layout.fillWidth: true
                         height: 40
-                        radius: 8
+                        radius: 6
                         color: "#F3F4F6"
-
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
-
-                            Text {
-                                text: "🏠"
-                                font.pixelSize: 16
-                            }
-
-                            Text {
-                                text: "Dashboard"
-                                color: "#18181B"
-                                font.pixelSize: 13
-                                font.weight: Font.Medium
-                            }
+                            Text { text: "📊"; font.pixelSize: 16 }
+                            Text { text: "Dashboard"; color: "#18181B"; font.pixelSize: 13; font.weight: Font.Medium }
                         }
                     }
 
-                    // Instructors
                     Rectangle {
                         Layout.fillWidth: true
                         height: 40
-                        radius: 8
-                        color: navMA1.containsMouse ? "#F9FAFB" : "transparent"
-
+                        radius: 6
+                        color: nav1MA.containsMouse ? "#F9FAFB" : "transparent"
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
-
-                            Text {
-                                text: "👥"
-                                font.pixelSize: 16
-                            }
-
-                            Text {
-                                text: "Instructors"
-                                color: "#6B7280"
-                                font.pixelSize: 13
-                            }
+                            Text { text: "👥"; font.pixelSize: 16 }
+                            Text { text: "Instructors"; color: "#6B7280"; font.pixelSize: 13 }
                         }
-
                         MouseArea {
-                            id: navMA1
+                            id: nav1MA
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.navigateToInstructors()
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 40
+                        radius: 6
+                        color: nav2MA.containsMouse ? "#F9FAFB" : "transparent"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            spacing: 10
+                            Text { text: "📚"; font.pixelSize: 16 }
+                            Text { text: "Courses"; color: "#6B7280"; font.pixelSize: 13 }
+                        }
+                        MouseArea {
+                            id: nav2MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                         }
                     }
 
-                    // Courses
                     Rectangle {
                         Layout.fillWidth: true
                         height: 40
-                        radius: 8
-                        color: navMA2.containsMouse ? "#F9FAFB" : "transparent"
-
+                        radius: 6
+                        color: nav3MA.containsMouse ? "#F9FAFB" : "transparent"
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
-
-                            Text {
-                                text: "📚"
-                                font.pixelSize: 16
-                            }
-
-                            Text {
-                                text: "Courses"
-                                color: "#6B7280"
-                                font.pixelSize: 13
-                            }
+                            Text { text: "👤"; font.pixelSize: 16 }
+                            Text { text: "Users"; color: "#6B7280"; font.pixelSize: 13 }
                         }
-
                         MouseArea {
-                            id: navMA2
+                            id: nav3MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                         }
                     }
 
-                    // Users
                     Rectangle {
                         Layout.fillWidth: true
                         height: 40
-                        radius: 8
-                        color: navMA3.containsMouse ? "#F9FAFB" : "transparent"
-
+                        radius: 6
+                        color: nav4MA.containsMouse ? "#F9FAFB" : "transparent"
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
-
-                            Text {
-                                text: "👤"
-                                font.pixelSize: 16
-                            }
-
-                            Text {
-                                text: "Users"
-                                color: "#6B7280"
-                                font.pixelSize: 13
-                            }
+                            Text { text: "💳"; font.pixelSize: 16 }
+                            Text { text: "Transactions"; color: "#6B7280"; font.pixelSize: 13 }
                         }
-
                         MouseArea {
-                            id: navMA3
+                            id: nav4MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                         }
                     }
 
-                    // Transactions
                     Rectangle {
                         Layout.fillWidth: true
                         height: 40
-                        radius: 8
-                        color: navMA4.containsMouse ? "#F9FAFB" : "transparent"
-
+                        radius: 6
+                        color: nav5MA.containsMouse ? "#F9FAFB" : "transparent"
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
-
-                            Text {
-                                text: "💳"
-                                font.pixelSize: 16
-                            }
-
-                            Text {
-                                text: "Transactions"
-                                color: "#6B7280"
-                                font.pixelSize: 13
-                            }
+                            Text { text: "⚙️"; font.pixelSize: 16 }
+                            Text { text: "Settings"; color: "#6B7280"; font.pixelSize: 13 }
                         }
-
                         MouseArea {
-                            id: navMA4
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                        }
-                    }
-
-                    // Settings
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 40
-                        radius: 8
-                        color: navMA5.containsMouse ? "#F9FAFB" : "transparent"
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            spacing: 10
-
-                            Text {
-                                text: "⚙️"
-                                font.pixelSize: 16
-                            }
-
-                            Text {
-                                text: "Settings"
-                                color: "#6B7280"
-                                font.pixelSize: 13
-                            }
-                        }
-
-                        MouseArea {
-                            id: navMA5
+                            id: nav5MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
@@ -287,31 +261,27 @@ Rectangle {
 
                 Item { Layout.fillHeight: true }
 
-                // User Profile Section
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 64
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    radius: 8
+                    Layout.preferredHeight: 60
+                    radius: 6
                     color: profileMA.containsMouse ? "#F9FAFB" : "transparent"
 
                     RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: 12
                         anchors.rightMargin: 12
-                        spacing: 12
+                        spacing: 10
 
                         Rectangle {
                             width: 36
                             height: 36
                             radius: 18
                             color: "#E5E7EB"
-
                             Text {
-                                text: authController.userName ? authController.userName.charAt(0).toUpperCase() : "U"
+                                text: authController && authController.userName ? authController.userName.charAt(0).toUpperCase() : "U"
                                 color: "#6B7280"
-                                font.pixelSize: 13
+                                font.pixelSize: 14
                                 font.weight: Font.Medium
                                 anchors.centerIn: parent
                             }
@@ -320,26 +290,35 @@ Rectangle {
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
-
                             Text {
-                                text: authController.userName || "User"
+                                text: authController ? authController.userName || "User" : "User"
                                 color: "#18181B"
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
                             }
-
                             Text {
-                                text: authController.userEmail || "user@email.com"
+                                text: authController ? authController.userEmail || "user@email.com" : "user@email.com"
                                 color: "#9CA3AF"
                                 font.pixelSize: 11
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
                             }
                         }
 
-                        Text {
-                            text: "⋮"
-                            color: "#9CA3AF"
-                            font.pixelSize: 18
-                            font.bold: true
+                        Rectangle {
+                            width: 20
+                            height: 20
+                            radius: 4
+                            color: "transparent"
+                            Text {
+                                text: "↪"
+                                color: "#9CA3AF"
+                                font.pixelSize: 16
+                                rotation: 180
+                                anchors.centerIn: parent
+                            }
                         }
                     }
 
@@ -348,51 +327,48 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            authController.logout()
+                            root.logout()
+                        }
                     }
                 }
             }
         }
 
-        // RIGHT CONTENT AREA
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
 
-            // Top Bar
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 72
+                Layout.preferredHeight: 70
                 color: "white"
-
                 Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
                     color: "#E5E7EB"
                 }
-
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 32
-                    anchors.rightMargin: 32
+                    anchors.leftMargin: 24
+                    anchors.rightMargin: 24
                     spacing: 16
-
                     TextField {
-                        Layout.preferredWidth: 320
-                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 300
+                        Layout.preferredHeight: 38
                         placeholderText: "Search anything..."
-                        leftPadding: 40
-
+                        leftPadding: 38
                         background: Rectangle {
                             radius: 8
                             color: "#F9FAFB"
                             border.color: "#E5E7EB"
                             border.width: 1
-
                             Text {
                                 text: "🔍"
-                                font.pixelSize: 16
+                                font.pixelSize: 14
                                 anchors.left: parent.left
                                 anchors.leftMargin: 12
                                 anchors.verticalCenter: parent.verticalCenter
@@ -400,32 +376,17 @@ Rectangle {
                             }
                         }
                     }
-
                     Item { Layout.fillWidth: true }
-
                     Rectangle {
-                        width: 40
-                        height: 40
+                        width: 38
+                        height: 38
                         radius: 8
                         color: notifMA.containsMouse ? "#F9FAFB" : "transparent"
-
                         Text {
                             text: "🔔"
                             font.pixelSize: 18
                             anchors.centerIn: parent
                         }
-
-                        Rectangle {
-                            width: 8
-                            height: 8
-                            radius: 4
-                            color: "#EF4444"
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                            anchors.topMargin: 8
-                            anchors.rightMargin: 8
-                        }
-
                         MouseArea {
                             id: notifMA
                             anchors.fill: parent
@@ -436,368 +397,353 @@ Rectangle {
                 }
             }
 
-            // Main Content Area
             Flickable {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                contentHeight: mainContent.height
+                contentHeight: mainContent.height + 40
                 clip: true
 
                 ColumnLayout {
                     id: mainContent
                     width: parent.width
-                    spacing: 24
+                    spacing: 20
 
-                    // Page Header
-                    RowLayout {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        Layout.topMargin: 32
-                        Layout.leftMargin: 32
-                        Layout.rightMargin: 32
-                        spacing: 16
-
-                        ColumnLayout {
-                            spacing: 4
-
-                            Text {
-                                text: "Home - Empty state"
-                                color: "#9CA3AF"
-                                font.pixelSize: 13
-                            }
-
-                            Text {
-                                text: "Admin Dashboard"
-                                font.pixelSize: 24
-                                font.bold: true
-                                color: "#18181B"
-                            }
-
-                            Text {
-                                text: "Welcome back! Here's an overview of your platform."
-                                font.pixelSize: 14
-                                color: "#6B7280"
-                            }
+                        Layout.topMargin: 24
+                        Layout.leftMargin: 24
+                        Layout.rightMargin: 24
+                        spacing: 4
+                        Text {
+                            text: "Home - Empty state - Profile/Settings"
+                            color: "#9CA3AF"
+                            font.pixelSize: 12
+                        }
+                        Text {
+                            text: "Admin Dashboard"
+                            font.pixelSize: 24
+                            font.bold: true
+                            color: "#18181B"
+                        }
+                        Text {
+                            text: "Welcome back! Here's an overview of your platform."
+                            font.pixelSize: 13
+                            color: "#6B7280"
                         }
                     }
 
-                    // Stats Cards Grid
                     GridLayout {
                         Layout.fillWidth: true
-                        Layout.leftMargin: 32
-                        Layout.rightMargin: 32
+                        Layout.leftMargin: 24
+                        Layout.rightMargin: 24
                         columns: 4
                         rowSpacing: 16
                         columnSpacing: 16
 
-                        // Card 1
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 120
                             color: "white"
-                            radius: 12
+                            radius: 10
                             border.color: "#E5E7EB"
                             border.width: 1
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 20
-                                spacing: 12
+                                anchors.margins: 16
+                                spacing: 8
 
-                                Text {
-                                    text: "👥"
-                                    font.pixelSize: 20
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Rectangle {
+                                        width: 32
+                                        height: 32
+                                        radius: 6
+                                        color: "#EEF2FF"
+                                        Text {
+                                            text: "👥"
+                                            font.pixelSize: 16
+                                            anchors.centerIn: parent
+                                        }
+                                    }
+                                    Item { Layout.fillWidth: true }
                                 }
 
                                 Text {
                                     text: "Total Instructors"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     color: "#6B7280"
                                 }
 
                                 Text {
-                                    text: dashboardController.totalInstructors.toString()
-                                    font.pixelSize: 24
+                                    text: dashboardController ? dashboardController.totalInstructors.toString() : "0"
+                                    font.pixelSize: 28
                                     font.bold: true
                                     color: "#18181B"
                                 }
 
                                 Text {
-                                    text: dashboardController.pendingInstructors + " pending verification"
-                                    font.pixelSize: 12
+                                    text: dashboardController ? dashboardController.verifiedInstructors + " verified" : "0 verified"
+                                    font.pixelSize: 11
                                     color: "#9CA3AF"
                                 }
                             }
                         }
 
-                        // Card 2
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 120
                             color: "white"
-                            radius: 12
+                            radius: 10
                             border.color: "#E5E7EB"
                             border.width: 1
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 20
-                                spacing: 12
+                                anchors.margins: 16
+                                spacing: 8
 
-                                Text {
-                                    text: "📚"
-                                    font.pixelSize: 20
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Rectangle {
+                                        width: 32
+                                        height: 32
+                                        radius: 6
+                                        color: "#FEF3C7"
+                                        Text {
+                                            text: "📚"
+                                            font.pixelSize: 16
+                                            anchors.centerIn: parent
+                                        }
+                                    }
+                                    Item { Layout.fillWidth: true }
                                 }
 
                                 Text {
                                     text: "Total Courses"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     color: "#6B7280"
                                 }
 
                                 Text {
-                                    text: dashboardController.totalCourses.toString()
-                                    font.pixelSize: 24
+                                    text: dashboardController ? dashboardController.totalCourses.toString() : "0"
+                                    font.pixelSize: 28
                                     font.bold: true
                                     color: "#18181B"
                                 }
 
                                 Text {
-                                    text: dashboardController.activeCourses + " active courses"
-                                    font.pixelSize: 12
+                                    text: dashboardController ? dashboardController.activeCourses + " active courses" : "0 active courses"
+                                    font.pixelSize: 11
                                     color: "#9CA3AF"
                                 }
                             }
                         }
 
-                        // Card 3
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 120
                             color: "white"
-                            radius: 12
+                            radius: 10
                             border.color: "#E5E7EB"
                             border.width: 1
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 20
-                                spacing: 12
+                                anchors.margins: 16
+                                spacing: 8
 
-                                Text {
-                                    text: "👥"
-                                    font.pixelSize: 20
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Rectangle {
+                                        width: 32
+                                        height: 32
+                                        radius: 6
+                                        color: "#DBEAFE"
+                                        Text {
+                                            text: "👤"
+                                            font.pixelSize: 16
+                                            anchors.centerIn: parent
+                                        }
+                                    }
+                                    Item { Layout.fillWidth: true }
                                 }
 
                                 Text {
                                     text: "Total Students"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     color: "#6B7280"
                                 }
 
                                 Text {
-                                    text: dashboardController.totalStudents.toString()
-                                    font.pixelSize: 24
+                                    text: dashboardController ? dashboardController.totalStudents.toString() : "0"
+                                    font.pixelSize: 28
                                     font.bold: true
                                     color: "#18181B"
                                 }
 
                                 Text {
-                                    text: dashboardController.activeStudents + " active students"
-                                    font.pixelSize: 12
+                                    text: dashboardController ? dashboardController.activeStudents + " active students" : "0 active students"
+                                    font.pixelSize: 11
                                     color: "#9CA3AF"
                                 }
                             }
                         }
 
-                        // Card 4
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 120
                             color: "white"
-                            radius: 12
+                            radius: 10
                             border.color: "#E5E7EB"
                             border.width: 1
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 20
-                                spacing: 12
+                                anchors.margins: 16
+                                spacing: 8
 
-                                Text {
-                                    text: "💰"
-                                    font.pixelSize: 20
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Rectangle {
+                                        width: 32
+                                        height: 32
+                                        radius: 6
+                                        color: "#D1FAE5"
+                                        Text {
+                                            text: "💵"
+                                            font.pixelSize: 16
+                                            anchors.centerIn: parent
+                                        }
+                                    }
+                                    Item { Layout.fillWidth: true }
                                 }
 
                                 Text {
                                     text: "Total Revenue"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     color: "#6B7280"
                                 }
 
                                 Text {
-                                    text: dashboardController.formattedTotalRevenue
-                                    font.pixelSize: 24
+                                    text: dashboardController ? dashboardController.formattedTotalRevenue : "$0"
+                                    font.pixelSize: 28
                                     font.bold: true
                                     color: "#18181B"
                                 }
 
                                 Text {
-                                    text: "Courses revenue"
-                                    font.pixelSize: 12
+                                    text: dashboardController ? dashboardController.formattedMonthlyRevenue + " this month" : "$0 this month"
+                                    font.pixelSize: 11
                                     color: "#9CA3AF"
                                 }
                             }
                         }
                     }
 
-                    // Revenue Overview Section
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 400
-                        Layout.leftMargin: 32
-                        Layout.rightMargin: 32
-                        radius: 12
+                        Layout.preferredHeight: 280
+                        Layout.leftMargin: 24
+                        Layout.rightMargin: 24
+                        radius: 10
                         color: "white"
                         border.color: "#E5E7EB"
                         border.width: 1
 
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 24
-                            spacing: 24
+                            anchors.margins: 20
+                            spacing: 16
 
                             RowLayout {
                                 Layout.fillWidth: true
-
                                 Text {
                                     text: "Revenue Overview"
                                     font.pixelSize: 16
                                     font.weight: Font.DemiBold
                                     color: "#18181B"
                                 }
-
                                 Item { Layout.fillWidth: true }
-
-                                Rectangle {
-                                    width: 120
-                                    height: 36
-                                    radius: 6
-                                    color: "white"
-                                    border.color: "#E5E7EB"
-                                    border.width: 1
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 12
-                                        anchors.rightMargin: 8
-                                        spacing: 8
-
-                                        Text {
-                                            text: "Last 30 days"
-                                            font.pixelSize: 13
-                                            color: "#6B7280"
-                                        }
-
-                                        Item { Layout.fillWidth: true }
-
-                                        Text {
-                                            text: "▼"
-                                            font.pixelSize: 10
-                                            color: "#9CA3AF"
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                    }
+                                ComboBox {
+                                    model: ["Last 30 days", "Last 7 days", "Last 90 days"]
+                                    currentIndex: 0
+                                    font.pixelSize: 12
+                                    Layout.preferredWidth: 130
+                                    Layout.preferredHeight: 32
                                 }
                             }
 
-                            // Empty State
-                            ColumnLayout {
+                            Rectangle {
                                 Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                spacing: 16
+                                height: 1
+                                color: "#F3F4F6"
+                            }
 
-                                Item { Layout.fillHeight: true }
+                            Item { Layout.fillHeight: true }
 
-                                Rectangle {
+                            ColumnLayout {
+                                Layout.alignment: Qt.AlignCenter
+                                spacing: 12
+
+                                Text {
+                                    text: "📈"
+                                    font.pixelSize: 48
                                     Layout.alignment: Qt.AlignHCenter
-                                    width: 80
-                                    height: 80
-                                    radius: 40
-                                    color: "#F9FAFB"
-
-                                    Text {
-                                        text: "📈"
-                                        font.pixelSize: 40
-                                        anchors.centerIn: parent
-                                        rotation: 15
-                                    }
                                 }
 
                                 Text {
                                     text: "No Revenue Data Yet"
                                     font.pixelSize: 16
-                                    font.weight: Font.DemiBold
+                                    font.weight: Font.Medium
                                     color: "#18181B"
                                     Layout.alignment: Qt.AlignHCenter
                                 }
 
                                 Text {
-                                    text: "Revenue data will appear here once students start purchasing\ncourses."
+                                    text: "Revenue data will appear here once students start purchasing courses"
                                     font.pixelSize: 13
                                     color: "#9CA3AF"
-                                    horizontalAlignment: Text.AlignHCenter
                                     Layout.alignment: Qt.AlignHCenter
                                 }
-
-                                Item { Layout.fillHeight: true }
                             }
+
+                            Item { Layout.fillHeight: true }
                         }
                     }
 
-                    // Bottom Section - Two Columns
-                    GridLayout {
+                    RowLayout {
                         Layout.fillWidth: true
-                        Layout.leftMargin: 32
-                        Layout.rightMargin: 32
-                        Layout.bottomMargin: 32
-                        columns: 2
-                        rowSpacing: 16
-                        columnSpacing: 16
+                        Layout.leftMargin: 24
+                        Layout.rightMargin: 24
+                        Layout.bottomMargin: 24
+                        spacing: 16
 
-                        // Pending Instructor Requests
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 280
-                            radius: 12
+                            Layout.preferredHeight: 400
+                            Layout.fillHeight: false
+                            radius: 10
                             color: "white"
                             border.color: "#E5E7EB"
                             border.width: 1
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 24
+                                anchors.margins: 20
                                 spacing: 16
 
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 4
+                                Text {
+                                    text: "Pending Instructor Requests"
+                                    font.pixelSize: 15
+                                    font.weight: Font.DemiBold
+                                    color: "#18181B"
+                                }
 
-                                    Text {
-                                        text: "Pending Instructor Requests"
-                                        font.pixelSize: 16
-                                        font.weight: Font.DemiBold
-                                        color: "#18181B"
-                                    }
-
-                                    Text {
-                                        text: "Review and approve new instructor applications"
-                                        font.pixelSize: 13
-                                        color: "#9CA3AF"
-                                    }
+                                Text {
+                                    text: "Review and approve new instructor applications"
+                                    font.pixelSize: 12
+                                    color: "#9CA3AF"
                                 }
 
                                 Rectangle {
@@ -809,52 +755,127 @@ Rectangle {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    spacing: 0
+                                    visible: pendingInstructors.length === 0
 
                                     Item { Layout.fillHeight: true }
 
-                                    Text {
-                                        text: "No pending requests"
-                                        font.pixelSize: 14
-                                        color: "#9CA3AF"
-                                        Layout.alignment: Qt.AlignHCenter
+                                    ColumnLayout {
+                                        Layout.alignment: Qt.AlignCenter
+                                        spacing: 8
+
+                                        Text {
+                                            text: "👥"
+                                            font.pixelSize: 40
+                                            Layout.alignment: Qt.AlignHCenter
+                                        }
+
+                                        Text {
+                                            text: "No pending requests"
+                                            font.pixelSize: 13
+                                            color: "#9CA3AF"
+                                            Layout.alignment: Qt.AlignHCenter
+                                        }
                                     }
 
                                     Item { Layout.fillHeight: true }
+                                }
+
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    visible: pendingInstructors.length > 0
+                                    clip: true
+
+                                    ColumnLayout {
+                                        width: parent.width
+                                        spacing: 0
+
+                                        Repeater {
+                                            model: pendingInstructors
+                                            delegate: Rectangle {
+                                                width: parent.width
+                                                height: 64
+                                                color: instructorMA.containsMouse ? "#F9FAFB" : "transparent"
+                                                radius: 6
+
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.leftMargin: 8
+                                                    anchors.rightMargin: 8
+                                                    spacing: 12
+
+                                                    Rectangle {
+                                                        width: 40
+                                                        height: 40
+                                                        radius: 20
+                                                        color: "#E5E7EB"
+                                                        Text {
+                                                            text: getInitials(modelData.firstName, modelData.lastName)
+                                                            color: "#6B7280"
+                                                            font.pixelSize: 14
+                                                            font.weight: Font.Medium
+                                                            anchors.centerIn: parent
+                                                        }
+                                                    }
+
+                                                    ColumnLayout {
+                                                        Layout.fillWidth: true
+                                                        spacing: 2
+
+                                                        Text {
+                                                            text: modelData.firstName + " " + modelData.lastName
+                                                            font.pixelSize: 13
+                                                            font.weight: Font.Medium
+                                                            color: "#18181B"
+                                                        }
+
+                                                        Text {
+                                                            text: modelData.email
+                                                            font.pixelSize: 12
+                                                            color: "#9CA3AF"
+                                                        }
+                                                    }
+                                                }
+
+                                                MouseArea {
+                                                    id: instructorMA
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: root.navigateToInstructors()
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
 
-                        // Recent Activity
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 280
-                            radius: 12
+                            Layout.preferredHeight: 400
+                            Layout.fillHeight: false
+                            radius: 10
                             color: "white"
                             border.color: "#E5E7EB"
                             border.width: 1
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 24
+                                anchors.margins: 20
                                 spacing: 16
 
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 4
+                                Text {
+                                    text: "Recent Activity"
+                                    font.pixelSize: 15
+                                    font.weight: Font.DemiBold
+                                    color: "#18181B"
+                                }
 
-                                    Text {
-                                        text: "Recent Activity"
-                                        font.pixelSize: 16
-                                        font.weight: Font.DemiBold
-                                        color: "#18181B"
-                                    }
-
-                                    Text {
-                                        text: "Latest activities on the platform"
-                                        font.pixelSize: 13
-                                        color: "#9CA3AF"
-                                    }
+                                Text {
+                                    text: "Latest activities on the platform"
+                                    font.pixelSize: 12
+                                    color: "#9CA3AF"
                                 }
 
                                 Rectangle {
@@ -866,22 +887,33 @@ Rectangle {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    spacing: 4
+                                    visible: !loadingActivities && recentActivities.length === 0
 
                                     Item { Layout.fillHeight: true }
 
-                                    Text {
-                                        text: "No recent activity"
-                                        font.pixelSize: 14
-                                        color: "#9CA3AF"
-                                        Layout.alignment: Qt.AlignHCenter
-                                    }
+                                    ColumnLayout {
+                                        Layout.alignment: Qt.AlignCenter
+                                        spacing: 8
 
-                                    Text {
-                                        text: "Activity will appear here as students enroll in courses"
-                                        font.pixelSize: 12
-                                        color: "#D1D5DB"
-                                        Layout.alignment: Qt.AlignHCenter
+                                        Text {
+                                            text: "📌"
+                                            font.pixelSize: 40
+                                            Layout.alignment: Qt.AlignHCenter
+                                        }
+
+                                        Text {
+                                            text: "No recent activity"
+                                            font.pixelSize: 13
+                                            color: "#9CA3AF"
+                                            Layout.alignment: Qt.AlignHCenter
+                                        }
+
+                                        Text {
+                                            text: "Activity will appear here as students enroll in courses"
+                                            font.pixelSize: 11
+                                            color: "#D1D5DB"
+                                            Layout.alignment: Qt.AlignHCenter
+                                        }
                                     }
 
                                     Item { Layout.fillHeight: true }

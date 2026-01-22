@@ -23,15 +23,7 @@ ApplicationWindow {
             onNavigateToRegister: stackView.push(registerComponent)
         }
     }
-    Component {
-        id: dashboardComponent
-        DashboardPage {  // Change this to DashboardPageNew
-            onLogout: {
-                stackView.clear()
-                stackView.push(loginComponent)
-            }
-        }
-    }
+
     Component {
         id: otpComponent
         OtpPage {
@@ -54,7 +46,18 @@ ApplicationWindow {
         }
     }
 
-
+    Component {
+        id: dashboardComponent
+        DashboardPage {
+            onLogout: {
+                stackView.clear()
+                stackView.push(loginComponent)
+            }
+            onNavigateToInstructors: {
+                console.log("Navigate to Instructors page")
+            }
+        }
+    }
 
     RegistrationSuccessDialog {
         id: successDialog
@@ -66,20 +69,16 @@ ApplicationWindow {
 
     Connections {
         target: authController
-
         function onLoginSuccessful() {
             stackView.push(otpComponent)
         }
-
         function onOtpVerified() {
             stackView.clear()
             stackView.push(dashboardComponent)
         }
-
         function onRegistrationSuccessful() {
             successDialog.open()
         }
-
         function onLoggedOut() {
             stackView.clear()
             stackView.push(loginComponent)

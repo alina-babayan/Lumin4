@@ -3,11 +3,14 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QIcon>
+#include <QDebug>
 #include "authcontroller.h"
 #include "dashboardcontroller.h"
 
 int main(int argc, char *argv[])
 {
+    qDebug() << "Application starting...";
+
     QGuiApplication app(argc, argv);
 
     app.setOrganizationName("PicsartAcademy");
@@ -20,28 +23,33 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
-    // Register controllers
     AuthController authController;
     DashboardController dashboardController;
+
+    qDebug() << "Controllers created";
 
     engine.rootContext()->setContextProperty("authController", &authController);
     engine.rootContext()->setContextProperty("dashboardController", &dashboardController);
 
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
-                     &app, []() { QCoreApplication::exit(-1); },
-                     Qt::QueuedConnection);
+    qDebug() << "Context properties set";
 
     const QUrl url(QStringLiteral("qrc:/new/prefix1/Main.qml"));
 
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [url](QObject *obj, const QUrl &objUrl) {
-                         if (!obj && url == objUrl) {
-                             qCritical() << "Failed to load QML file:" << url;
-                             QCoreApplication::exit(-1);
-                         }
-                     }, Qt::QueuedConnection);
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
+                     &app, []() {
+                         qCritical() << "Object creation failed!";
+                         QCoreApplication::exit(-1);
+                     },
+                     Qt::QueuedConnection);
 
     engine.load(url);
+
+    if (engine.rootObjects().isEmpty()) {
+        qCritical() << "Failed to load QML!";
+        return -1;
+    }
+
+    qDebug() << "QML loaded successfully";
 
     return app.exec();
 }

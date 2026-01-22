@@ -9,11 +9,9 @@ class DashboardController : public QObject
 {
     Q_OBJECT
 
-    // Properties exposed to QML
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
 
-    // Stats properties
     Q_PROPERTY(int totalInstructors READ totalInstructors NOTIFY statsChanged)
     Q_PROPERTY(int verifiedInstructors READ verifiedInstructors NOTIFY statsChanged)
     Q_PROPERTY(int pendingInstructors READ pendingInstructors NOTIFY statsChanged)
@@ -34,7 +32,6 @@ public:
     explicit DashboardController(QObject *parent = nullptr);
     ~DashboardController();
 
-    // Property getters
     bool isLoading() const { return m_isLoading; }
     QString errorMessage() const { return m_errorMessage; }
 
@@ -54,17 +51,14 @@ public:
     QString formattedTotalRevenue() const;
     QString formattedMonthlyRevenue() const;
 
-    // Methods exposed to QML
     Q_INVOKABLE void loadStats();
     Q_INVOKABLE void clearError();
 
 signals:
-    // Property change signals
     void isLoadingChanged();
     void errorMessageChanged();
     void statsChanged();
 
-    // Action signals
     void statsLoaded();
 
 private slots:
@@ -76,11 +70,9 @@ private slots:
 private:
     ApiManager *m_api;
 
-    // State
     bool m_isLoading;
     QString m_errorMessage;
 
-    // Stats data
     int m_totalInstructors;
     int m_verifiedInstructors;
     int m_pendingInstructors;
@@ -95,7 +87,6 @@ private:
     double m_totalRevenue;
     double m_monthlyRevenue;
 
-    // Helper methods
     void setLoading(bool loading);
     void setError(const QString &error);
     QString formatCurrency(double amount) const;
