@@ -1,86 +1,87 @@
 import QtQuick 2.15
+import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
 
 ApplicationWindow {
-    visible: true
+    id: window
     width: 1400
-    height: 800
-    minimumWidth: 1200
-    minimumHeight: 700
-    title: "Lumin"
+    height: 900
+    visible: true
+    title: "Picsart Academy - Lumin"
 
     StackView {
-        id: stack
+        id: stackView
         anchors.fill: parent
-        initialItem: loginPageComponent
+        initialItem: authController.isLoggedIn ? dashboardComponent : loginComponent
+    }
 
-        Component.onCompleted: {
-            if (authController && authController.isLoggedIn) {
-                stack.replace(dashboardPageComponent)
+    Component {
+        id: loginComponent
+        LoginPage {
+            onNavigateToOtp: stackView.push(otpComponent)
+            onNavigateToForgotPassword: stackView.push(forgotPasswordComponent)
+            onNavigateToRegister: stackView.push(registerComponent)
+        }
+    }
+
+    Component {
+        id: otpComponent
+        OtpPage {
+            onNavigateBack: stackView.pop()
+        }
+    }
+
+    Component {
+        id: registerComponent
+        RegisterPage {
+            onNavigateBack: stackView.pop()
+            onShowSuccessDialog: successDialog.open()
+        }
+    }
+
+    Component {
+        id: forgotPasswordComponent
+        ForgotPasswordPage {
+            onNavigateBack: stackView.pop()
+        }
+    }
+
+    Component {
+        id: dashboardComponent
+        DashboardPage {
+            onLogout: {
+                stackView.clear()
+                stackView.push(loginComponent)
+            }
+            onNavigateToInstructors: {
+                console.log("Navigate to Instructors page")
             }
         }
     }
 
-    Component {
-        id: loginPageComponent
-        LoginPage {
-            onNavigateToOtp: stack.push(otpPageComponent)
-            onNavigateToForgotPassword: stack.push(forgotPasswordPageComponent)
-            onNavigateToRegister: stack.push(registerPageComponent)
-        }
-    }
-
-    Component {
-        id: otpPageComponent
-        OtpPage {
-            onNavigateBack: stack.pop()
-        }
-    }
-
-    Component {
-        id: forgotPasswordPageComponent
-        ForgotPasswordPage {
-            onNavigateBack: stack.pop()
-        }
-    }
-
-    Component {
-        id: registerPageComponent
-        RegisterPage {
-            onNavigateBack: stack.pop()
-        }
-    }
-
-    Component {
-        id: dashboardPageComponent
-        DashboardPage {}
-    }
-
-    SuccessDialog {
+    RegistrationSuccessDialog {
         id: successDialog
         onAccepted: {
-            authController.clearError()
-            stack.pop()
+            stackView.clear()
+            stackView.push(loginComponent)
         }
     }
 
     Connections {
         target: authController
-
         function onLoginSuccessful() {
-            stack.push(otpPageComponent)
+            stackView.push(otpComponent)
         }
-
         function onOtpVerified() {
-            stack.replace(dashboardPageComponent)
+            stackView.clear()
+            stackView.push(dashboardComponent)
         }
-
         function onRegistrationSuccessful() {
             successDialog.open()
         }
-
         function onLoggedOut() {
-            stack.replace(loginPageComponent)
+            stackView.clear()
+            stackView.push(loginComponent)
         }
     }
 }

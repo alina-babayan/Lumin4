@@ -31,6 +31,7 @@ Popup {
             radius: 32
             color: "#D1FAE5"
             anchors.horizontalCenter: parent.horizontalCenter
+
             Text {
                 text: "✓"
                 color: "#10b981"
@@ -43,6 +44,7 @@ Popup {
         Column {
             width: parent.width
             spacing: 8
+
             Text {
                 text: "Registration Successful!"
                 font.pixelSize: 24
@@ -50,6 +52,7 @@ Popup {
                 color: "#1a1a1a"
                 anchors.horizontalCenter: parent.horizontalCenter
             }
+
             Text {
                 text: "Your account has been created.\nPlease wait for admin approval before logging in."
                 font.pixelSize: 14
@@ -57,6 +60,7 @@ Popup {
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
                 width: parent.width
+                lineHeight: 1.5
             }
         }
 
@@ -64,10 +68,12 @@ Popup {
             text: "Back to Login"
             width: parent.width
             height: 52
+
             background: Rectangle {
                 radius: 8
                 color: parent.pressed ? "#0f0f0f" : (parent.hovered ? "#2a2a2a" : "#1a1a1a")
             }
+
             contentItem: Text {
                 text: parent.text
                 color: "white"
@@ -76,6 +82,7 @@ Popup {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
+
             onClicked: {
                 root.close()
                 root.accepted()

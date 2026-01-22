@@ -218,10 +218,9 @@ void ApiManager::verifyOtp(const QString &sessionToken, const QString &code)
 }
 
 
-void ApiManager::registerUser(const QString &firstName,
-                              const QString &lastName,
-                              const QString &email,
-                              const QString &password)
+
+void ApiManager::registerUser(const QString &firstName, const QString &lastName,
+                              const QString &email, const QString &password)
 {
     emit requestStarted();
 
@@ -260,6 +259,7 @@ void ApiManager::registerUser(const QString &firstName,
     });
 }
 
+
 void ApiManager::forgotPassword(const QString &email)
 {
     emit requestStarted();
@@ -274,16 +274,13 @@ void ApiManager::forgotPassword(const QString &email)
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         emit requestFinished();
-
-        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        qDebug() << "Forgot Password HTTP status:" << statusCode;
-
         if (reply->error() != QNetworkReply::NoError) {
-            qDebug() << "Network error in forgotPassword:" << reply->errorString();
             QJsonObject response = parseResponse(reply);
-            if (!response.isEmpty() && response.contains("error")) {
-                qDebug() << "Emitting failed with code:" << response["error"].toString();
-                emit forgotPasswordFailed(response["error"].toString(), response["message"].toString());
+            if (!response.isEmpty()) {
+                QString errorCode = response["code"].toString();
+                QString errorMessage = response["message"].toString();
+
+                emit forgotPasswordFailed(errorCode, errorMessage);
             } else {
                 handleNetworkError(reply);
             }
@@ -300,8 +297,9 @@ void ApiManager::forgotPassword(const QString &email)
             qDebug() << "Error response detected";
             emit forgotPasswordFailed(response["error"].toString(), response["message"].toString());
         } else {
-            qDebug() << "Unknown response format";
-            emit forgotPasswordFailed("UNKNOWN_ERROR", "Unexpected response from server");
+            QString errorCode = response["code"].toString();
+            QString errorMessage = response["message"].toString();
+            emit forgotPasswordFailed(errorCode, errorMessage);
         }
     });
 }
@@ -553,6 +551,83 @@ void ApiManager::removeProfileImage()
             emit profileImageRemoved();
         } else {
             emit profileImageRemoveFailed(response["message"].toString());
+        }
+    });
+}
+
+
+void ApiManager::getDashboardStats()
+{
+    emit requestStarted();
+
+    QNetworkRequest request = createRequest("/api/dashboard/stats", true);
+
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit dashboardStatsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit dashboardStatsLoaded(response["data"].toObject());
+        } else {
+            emit dashboardStatsLoadFailed(response["message"].toString());
+        }
+    });
+}
+void ApiManager::getInstructors(const QString &status)
+{
+    emit requestStarted();
+
+    QString endpoint = "/api/instructors";
+    if (!status.isEmpty()) {
+        endpoint += "?status=" + status;
+    }
+
+    QNetworkRequest request = createRequest(endpoint, true);
+
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit instructorsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit instructorsLoaded(response["data"].toObject());
+        } else {
+            emit instructorsLoadFailed(response["message"].toString());
         }
     });
 }

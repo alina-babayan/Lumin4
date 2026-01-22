@@ -10,6 +10,8 @@
         <file>LoginPage.qml</file>
         <file>ForgotPasswordPage.qml</file>
         <file>DashboardPage.qml</file>
-        <file>SuccessDialog.qml</file>
+        <file>StatCard.qml</file>
+        <file>RegistrationSuccessDialog.qml</file>
+        <file>NavItem.qml</file>
     </qresource>
 </RCC>

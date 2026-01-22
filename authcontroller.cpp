@@ -7,8 +7,10 @@ AuthController::AuthController(QObject *parent)
     , m_isLoading(false)
 {
 
-    connect(m_api, &ApiManager::loginSuccess, this, &AuthController::onLoginSuccess);
-    connect(m_api, &ApiManager::loginFailed, this, &AuthController::onLoginFailed);
+    connect(m_api, &ApiManager::loginSuccess,
+            this, &AuthController::onLoginSuccess);
+    connect(m_api, &ApiManager::loginFailed,
+            this, &AuthController::onLoginFailed);
 
     connect(m_api, &ApiManager::otpVerifySuccess, this, &AuthController::onOtpVerifySuccess);
     connect(m_api, &ApiManager::otpVerifyFailed, this, &AuthController::onOtpVerifyFailed);
@@ -25,21 +27,31 @@ AuthController::AuthController(QObject *parent)
     connect(m_api, &ApiManager::resetPasswordSuccess, this, &AuthController::onResetPasswordSuccess);
     connect(m_api, &ApiManager::resetPasswordFailed, this, &AuthController::onResetPasswordFailed);
 
-    connect(m_api, &ApiManager::profileLoaded, this, &AuthController::onProfileLoaded);
-    connect(m_api, &ApiManager::profileLoadFailed, this, &AuthController::onProfileLoadFailed);
+
+    connect(m_api, &ApiManager::profileLoaded,
+            this, &AuthController::onProfileLoaded);
+    connect(m_api, &ApiManager::profileLoadFailed,
+            this, &AuthController::onProfileLoadFailed);
 
     connect(m_api, &ApiManager::passwordChanged, this, &AuthController::onPasswordChanged);
     connect(m_api, &ApiManager::passwordChangeFailed, this, &AuthController::onPasswordChangeFailed);
 
-    connect(m_api, &ApiManager::requestStarted, this, &AuthController::onRequestStarted);
-    connect(m_api, &ApiManager::requestFinished, this, &AuthController::onRequestFinished);
+
+    connect(m_api, &ApiManager::requestStarted,
+            this, &AuthController::onRequestStarted);
+    connect(m_api, &ApiManager::requestFinished,
+            this, &AuthController::onRequestFinished);
 
     if (m_api->isLoggedIn()) {
         loadProfile();
     }
 }
 
-AuthController::~AuthController() {}
+
+AuthController::~AuthController()
+{
+}
+
 
 void AuthController::setLoading(bool loading)
 {
@@ -89,6 +101,7 @@ void AuthController::setUserFromJson(const QJsonObject &user)
         emit userIdChanged();
     }
 }
+
 
 void AuthController::login(const QString &email, const QString &password)
 {
@@ -141,10 +154,8 @@ void AuthController::resendOtp()
     m_api->login(m_lastEmail, m_lastPassword);
 }
 
-void AuthController::registerUser(const QString &firstName,
-                                  const QString &lastName,
-                                  const QString &email,
-                                  const QString &password)
+void AuthController::registerUser(const QString &firstName, const QString &lastName,
+                                  const QString &email, const QString &password)
 {
     clearError();
 
@@ -272,8 +283,7 @@ void AuthController::onLoginFailed(const QString &errorCode, const QString &erro
     setError(formatError(errorCode, errorMessage));
 }
 
-void AuthController::onOtpVerifySuccess(const QString &accessToken,
-                                        const QString &refreshToken,
+void AuthController::onOtpVerifySuccess(const QString &accessToken, const QString &refreshToken,
                                         const QJsonObject &user)
 {
     Q_UNUSED(accessToken)
