@@ -61,7 +61,7 @@ void ApiManager::onSslErrors(QNetworkReply *reply, const QList<QSslError> &error
     for (const QSslError &error : errors) {
         qDebug() << "SSL Error:" << error.errorString();
     }
-
+    Q_UNUSED(reply)
 }
 
 
@@ -591,6 +591,7 @@ void ApiManager::getDashboardStats()
         }
     });
 }
+
 void ApiManager::getInstructors(const QString &status)
 {
     emit requestStarted();
@@ -628,6 +629,47 @@ void ApiManager::getInstructors(const QString &status)
             emit instructorsLoaded(response["data"].toObject());
         } else {
             emit instructorsLoadFailed(response["message"].toString());
+        }
+    });
+}
+
+// NEW METHOD - Add this to enable approve/reject/revoke functionality
+void ApiManager::updateInstructorStatus(const QString &instructorId, const QString &status)
+{
+    emit requestStarted();
+
+    QString endpoint = QString("/api/instructors/%1/status").arg(instructorId);
+    QNetworkRequest request = createRequest(endpoint, true);
+
+    QJsonObject json;
+    json["status"] = status;
+
+    QNetworkReply *reply = m_networkManager->put(request, QJsonDocument(json).toJson());
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit instructorStatusUpdateFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit instructorStatusUpdated(response["data"].toObject());
+        } else {
+            emit instructorStatusUpdateFailed(response["message"].toString());
         }
     });
 }

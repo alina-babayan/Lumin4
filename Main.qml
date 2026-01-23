@@ -54,8 +54,18 @@ ApplicationWindow {
                 stackView.push(loginComponent)
             }
             onNavigateToInstructors: {
-                console.log("Navigate to Instructors page")
+                // FIXED: Actually navigate to Instructors page
+                stackView.push(instructorsComponent)
             }
+        }
+    }
+
+    // NEW: Add Instructors component
+    Component {
+        id: instructorsComponent
+        InstructorsPage {
+            // Add back navigation if needed
+            // onNavigateBack: stackView.pop()
         }
     }
 
@@ -69,16 +79,20 @@ ApplicationWindow {
 
     Connections {
         target: authController
+
         function onLoginSuccessful() {
             stackView.push(otpComponent)
         }
+
         function onOtpVerified() {
             stackView.clear()
             stackView.push(dashboardComponent)
         }
+
         function onRegistrationSuccessful() {
             successDialog.open()
         }
+
         function onLoggedOut() {
             stackView.clear()
             stackView.push(loginComponent)

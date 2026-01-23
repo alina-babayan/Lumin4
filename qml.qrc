@@ -13,5 +13,9 @@
         <file>StatCard.qml</file>
         <file>RegistrationSuccessDialog.qml</file>
         <file>NavItem.qml</file>
+        <file>ConfirmationDialog.qml</file>
+        <file>InstructorRow.qml</file>
+        <file>InstructorStatsCard.qml</file>
+        <file>InstructorsPage.qml</file>
     </qresource>
 </RCC>

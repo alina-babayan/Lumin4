@@ -4,6 +4,7 @@ CONFIG += c++17
 
 SOURCES += \
     dashboardcontroller.cpp \
+    instructorcontroller.cpp \
     main.cpp \
     apimanager.cpp \
     authcontroller.cpp
@@ -11,7 +12,8 @@ SOURCES += \
 HEADERS += \
     apimanager.h \
     authcontroller.h \
-    dashboardcontroller.h
+    dashboardcontroller.h \
+    instructorcontroller.h
 
 RESOURCES += qml.qrc
 

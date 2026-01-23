@@ -370,24 +370,24 @@ void AuthController::onRequestFinished()
 QString AuthController::formatError(const QString &code, const QString &message)
 {
     static const QMap<QString, QString> errorMessages = {
-        {"INVALID_CREDENTIALS", "Invalid email or password. Please try again."},
-        {"INVALID_OTP", "Invalid verification code. Please check and try again."},
-        {"OTP_EXPIRED", "Verification code has expired. Please request a new one."},
-        {"OTP_MAX_ATTEMPTS", "Too many failed attempts. Please request a new code."},
-        {"ACCOUNT_SUSPENDED", "Your account has been suspended. Please contact support."},
-        {"ACCOUNT_PENDING", "Your account is pending approval. Please wait for admin activation."},
-        {"ACCOUNT_INACTIVE", "Your account is inactive. Please contact support."},
-        {"EMAIL_EXISTS", "This email is already registered. Try logging in instead."},
-        {"USER_NOT_FOUND", "No account found with this email address."},
-        {"EMAIL_NOT_FOUND", "No account found with this email address."},
-        {"INVALID_TOKEN", "Invalid or expired token. Please try again."},
-        {"INVALID_PASSWORD", "Current password is incorrect."},
-        {"WEAK_PASSWORD",
-         "Password is too weak. Use at least 8 characters with letters and numbers."},
-        {"RATE_LIMITED", "Too many requests. Please wait a moment and try again."},
-        {"NETWORK_ERROR", "Unable to connect. Please check your internet connection."},
-        {"SERVER_ERROR", "Server error. Please try again later."},
-    };
+                                                         {"INVALID_CREDENTIALS", "Invalid email or password. Please try again."},
+                                                         {"INVALID_OTP", "Invalid verification code. Please check and try again."},
+                                                         {"OTP_EXPIRED", "Verification code has expired. Please request a new one."},
+                                                         {"OTP_MAX_ATTEMPTS", "Too many failed attempts. Please request a new code."},
+                                                         {"ACCOUNT_SUSPENDED", "Your account has been suspended. Please contact support."},
+                                                         {"ACCOUNT_PENDING", "Your account is pending approval. Please wait for admin activation."},
+                                                         {"ACCOUNT_INACTIVE", "Your account is inactive. Please contact support."},
+                                                         {"EMAIL_EXISTS", "This email is already registered. Try logging in instead."},
+                                                         {"USER_NOT_FOUND", "No account found with this email address."},
+                                                         {"EMAIL_NOT_FOUND", "No account found with this email address."},
+                                                         {"INVALID_TOKEN", "Invalid or expired token. Please try again."},
+                                                         {"INVALID_PASSWORD", "Current password is incorrect."},
+                                                         {"WEAK_PASSWORD",
+                                                          "Password is too weak. Use at least 8 characters with letters and numbers."},
+                                                         {"RATE_LIMITED", "Too many requests. Please wait a moment and try again."},
+                                                         {"NETWORK_ERROR", "Unable to connect. Please check your internet connection."},
+                                                         {"SERVER_ERROR", "Server error. Please try again later."},
+                                                         };
 
     if (errorMessages.contains(code)) {
         return errorMessages[code];

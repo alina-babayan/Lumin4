@@ -11,12 +11,13 @@ Rectangle {
 
     Flickable {
         anchors.fill: parent
-        contentHeight: regContent.height + 100
+        contentHeight: regContent.height
         clip: true
 
         RowLayout {
             id: regContent
             width: parent.width
+            height: Math.max(800, leftColumn.height + 100)
             spacing: 0
 
             Rectangle {
@@ -25,6 +26,7 @@ Rectangle {
                 color: "white"
 
                 Column {
+                    id: leftColumn
                     anchors.centerIn: parent
                     width: 440
                     spacing: 24
@@ -97,6 +99,7 @@ Rectangle {
                                     border.color: regFirstName.activeFocus ? "#1a1a1a" : "#e5e7eb"
                                     border.width: 1
                                 }
+                                onAccepted: regLastName.forceActiveFocus()
                             }
                         }
 
@@ -123,6 +126,7 @@ Rectangle {
                                     border.color: regLastName.activeFocus ? "#1a1a1a" : "#e5e7eb"
                                     border.width: 1
                                 }
+                                onAccepted: regEmail.forceActiveFocus()
                             }
                         }
 
@@ -149,6 +153,7 @@ Rectangle {
                                     border.color: regEmail.activeFocus ? "#1a1a1a" : "#e5e7eb"
                                     border.width: 1
                                 }
+                                onAccepted: regPassword.forceActiveFocus()
                             }
                         }
 
@@ -175,6 +180,19 @@ Rectangle {
                                     color: "#ffffff"
                                     border.color: regPassword.activeFocus ? "#1a1a1a" : "#e5e7eb"
                                     border.width: 1
+                                }
+                                onAccepted: {
+                                    if (regFirstName.text.trim().length >= 2 &&
+                                        regLastName.text.trim().length >= 2 &&
+                                        regEmail.text.includes("@") &&
+                                        regPassword.text.length >= 8) {
+                                        authController.registerUser(
+                                            regFirstName.text.trim(),
+                                            regLastName.text.trim(),
+                                            regEmail.text.trim(),
+                                            regPassword.text
+                                        )
+                                    }
                                 }
                             }
                         }

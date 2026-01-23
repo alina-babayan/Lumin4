@@ -3,14 +3,13 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
-#include <QIcon>
 #include <QDebug>
 #include "authcontroller.h"
 #include "dashboardcontroller.h"
+#include "instructorcontroller.h"
 
 int main(int argc, char *argv[])
 {
-
     qDebug() << "Application starting...";
 
     QGuiApplication app(argc, argv);
@@ -25,16 +24,23 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
-    AuthController authController;
-    DashboardController dashboardController;
-
+    // IMPORTANT: Create controllers on the heap with parent to ensure proper lifetime
+    AuthController *authController = new AuthController(&engine);
+    DashboardController *dashboardController = new DashboardController(&engine);
+    InstructorController *instructorController = new InstructorController(&engine);
 
     qDebug() << "Controllers created";
 
-    engine.rootContext()->setContextProperty("authController", &authController);
-    engine.rootContext()->setContextProperty("dashboardController", &dashboardController);
+    // Set context properties BEFORE loading QML
+    engine.rootContext()->setContextProperty("authController", authController);
+    engine.rootContext()->setContextProperty("dashboardController", dashboardController);
+    engine.rootContext()->setContextProperty("instructorController", instructorController);
 
     qDebug() << "Context properties set";
+
+    // Verify controllers are set
+    QObject *testAuth = engine.rootContext()->contextProperty("authController").value<QObject*>();
+    qDebug() << "authController verification:" << (testAuth != nullptr ? "OK" : "NULL");
 
     const QUrl url(QStringLiteral("qrc:/new/prefix1/Main.qml"));
 
@@ -44,6 +50,7 @@ int main(int argc, char *argv[])
                          QCoreApplication::exit(-1);
                      },
                      Qt::QueuedConnection);
+
     engine.load(url);
 
     if (engine.rootObjects().isEmpty()) {

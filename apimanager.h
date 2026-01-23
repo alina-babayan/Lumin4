@@ -36,8 +36,11 @@ public:
     void uploadProfileImage(const QString &filePath);
     void removeProfileImage();
 
-
     void getDashboardStats();
+
+    // Instructor Management - NEW
+    void getInstructors(const QString &status = "");
+    void updateInstructorStatus(const QString &instructorId, const QString &status);
 
     void setAccessToken(const QString &token);
     void setRefreshToken(const QString &token);
@@ -50,7 +53,6 @@ public:
 
     void setBaseUrl(const QString &url);
     QString baseUrl() const;
-    void getInstructors(const QString &status = "");
 
 signals:
     void loginSuccess(const QString &sessionToken, const QString &maskedEmail);
@@ -88,7 +90,6 @@ signals:
     void profileImageRemoved();
     void profileImageRemoveFailed(const QString &errorMessage);
 
-
     void dashboardStatsLoaded(const QJsonObject &stats);
     void dashboardStatsLoadFailed(const QString &errorMessage);
 
@@ -96,8 +97,11 @@ signals:
     void requestFinished();
     void networkError(const QString &errorMessage);
 
+    // Instructor Management Signals - NEW
     void instructorsLoaded(const QJsonObject &data);
     void instructorsLoadFailed(const QString &errorMessage);
+    void instructorStatusUpdated(const QJsonObject &data);
+    void instructorStatusUpdateFailed(const QString &errorMessage);
 
 private:
     QNetworkAccessManager *m_networkManager;
