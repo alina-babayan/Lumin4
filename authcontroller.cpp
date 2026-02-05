@@ -120,12 +120,18 @@ void AuthController::login(const QString &email, const QString &password)
     m_lastEmail = email.trimmed();
     m_lastPassword = password;
 
+    qDebug() << "AuthController::login - Starting login for:" << m_lastEmail;
     m_api->login(m_lastEmail, password);
 }
 
 void AuthController::verifyOtp(const QString &code)
 {
     clearError();
+
+    qDebug() << "AuthController::verifyOtp - Code length:" << code.length();
+    qDebug() << "AuthController::verifyOtp - Session token empty?" << m_sessionToken.isEmpty();
+    qDebug() << "AuthController::verifyOtp - Session token (first 20 chars):"
+             << m_sessionToken.left(20);
 
     if (code.length() != 6) {
         setError("Please enter the complete 6-digit code.");
@@ -134,10 +140,12 @@ void AuthController::verifyOtp(const QString &code)
 
     if (m_sessionToken.isEmpty()) {
         setError("Session expired. Please login again.");
+        qDebug() << "AuthController::verifyOtp - ERROR: Session token is empty!";
         emit loggedOut();
         return;
     }
 
+    qDebug() << "AuthController::verifyOtp - Calling API verifyOtp";
     m_api->verifyOtp(m_sessionToken, code);
 }
 
@@ -145,12 +153,16 @@ void AuthController::resendOtp()
 {
     clearError();
 
+    qDebug() << "AuthController::resendOtp - Last email:" << m_lastEmail;
+    qDebug() << "AuthController::resendOtp - Last password empty?" << m_lastPassword.isEmpty();
+
     if (m_lastEmail.isEmpty() || m_lastPassword.isEmpty()) {
         setError("Session expired. Please login again.");
         emit loggedOut();
         return;
     }
 
+    qDebug() << "AuthController::resendOtp - Calling login again";
     m_api->login(m_lastEmail, m_lastPassword);
 }
 
@@ -268,6 +280,11 @@ void AuthController::changePassword(const QString &currentPassword, const QStrin
 
 void AuthController::onLoginSuccess(const QString &sessionToken, const QString &maskedEmail)
 {
+    qDebug() << "AuthController::onLoginSuccess - Session token received (length):" << sessionToken.length();
+    qDebug() << "AuthController::onLoginSuccess - Session token (first 50 chars):" << sessionToken.left(50);
+    qDebug() << "AuthController::onLoginSuccess - Masked email:" << maskedEmail;
+
+    // CRITICAL: Store the session token
     m_sessionToken = sessionToken;
 
     if (m_maskedEmail != maskedEmail) {
@@ -275,11 +292,15 @@ void AuthController::onLoginSuccess(const QString &sessionToken, const QString &
         emit maskedEmailChanged();
     }
 
+    qDebug() << "AuthController::onLoginSuccess - m_sessionToken stored (first 50 chars):" << m_sessionToken.left(50);
+    qDebug() << "AuthController::onLoginSuccess - Emitting loginSuccessful signal";
+
     emit loginSuccessful();
 }
 
 void AuthController::onLoginFailed(const QString &errorCode, const QString &errorMessage)
 {
+    qDebug() << "AuthController::onLoginFailed - Code:" << errorCode << "Message:" << errorMessage;
     setError(formatError(errorCode, errorMessage));
 }
 
@@ -289,6 +310,9 @@ void AuthController::onOtpVerifySuccess(const QString &accessToken, const QStrin
     Q_UNUSED(accessToken)
     Q_UNUSED(refreshToken)
 
+    qDebug() << "AuthController::onOtpVerifySuccess - Verification successful";
+
+    // Clear sensitive data
     m_lastPassword.clear();
     m_sessionToken.clear();
 
@@ -300,6 +324,7 @@ void AuthController::onOtpVerifySuccess(const QString &accessToken, const QStrin
 
 void AuthController::onOtpVerifyFailed(const QString &errorCode, const QString &errorMessage)
 {
+    qDebug() << "AuthController::onOtpVerifyFailed - Code:" << errorCode << "Message:" << errorMessage;
     setError(formatError(errorCode, errorMessage));
 }
 
@@ -382,8 +407,7 @@ QString AuthController::formatError(const QString &code, const QString &message)
                                                          {"EMAIL_NOT_FOUND", "No account found with this email address."},
                                                          {"INVALID_TOKEN", "Invalid or expired token. Please try again."},
                                                          {"INVALID_PASSWORD", "Current password is incorrect."},
-                                                         {"WEAK_PASSWORD",
-                                                          "Password is too weak. Use at least 8 characters with letters and numbers."},
+                                                         {"WEAK_PASSWORD", "Password is too weak. Use at least 8 characters with letters and numbers."},
                                                          {"RATE_LIMITED", "Too many requests. Please wait a moment and try again."},
                                                          {"NETWORK_ERROR", "Unable to connect. Please check your internet connection."},
                                                          {"SERVER_ERROR", "Server error. Please try again later."},

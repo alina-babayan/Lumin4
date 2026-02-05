@@ -209,7 +209,7 @@ Item {
                         spacing: 16
 
                         Label {
-                            Layout.preferredWidth: 300
+                            Layout.preferredWidth: 312
                             text: "Instructor"
                             font.weight: Font.DemiBold
                             color: Material.foreground
@@ -283,29 +283,190 @@ Item {
                             model: instructorController.instructors
                             spacing: 0
 
-                            delegate: InstructorRow {
+                            delegate: Rectangle {
                                 width: instructorsList.width
-                                instructor: modelData
+                                height: 80
+                                color: mouseArea.containsMouse ? Material.color(Material.Grey, Material.Shade50) : "transparent"
 
-                                onApproveClicked: {
-                                    confirmDialog.instructorId = modelData.id
-                                    confirmDialog.instructorName = modelData.fullName
-                                    confirmDialog.action = "approve"
-                                    confirmDialog.open()
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width
+                                    height: 1
+                                    color: Material.dividerColor
                                 }
 
-                                onRejectClicked: {
-                                    confirmDialog.instructorId = modelData.id
-                                    confirmDialog.instructorName = modelData.fullName
-                                    confirmDialog.action = "reject"
-                                    confirmDialog.open()
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 24
+                                    anchors.rightMargin: 24
+                                    spacing: 16
+
+                                    // Instructor Info Column - MUST be 312px to match header
+                                    RowLayout {
+                                        Layout.preferredWidth: 312
+                                        spacing: 12
+
+                                        // Profile Image
+                                        Rectangle {
+                                            width: 48
+                                            height: 48
+                                            radius: 24
+                                            color: Material.color(Material.Grey, Material.Shade200)
+
+                                            Label {
+                                                anchors.centerIn: parent
+                                                text: {
+                                                    var initials = ""
+                                                    if (modelData.firstName) initials += modelData.firstName.charAt(0).toUpperCase()
+                                                    if (modelData.lastName) initials += modelData.lastName.charAt(0).toUpperCase()
+                                                    return initials || "?"
+                                                }
+                                                font.pixelSize: 18
+                                                font.weight: Font.DemiBold
+                                                color: Material.color(Material.Grey, Material.Shade700)
+                                            }
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 2
+
+                                            Label {
+                                                text: modelData.fullName || ""
+                                                font.pixelSize: 15
+                                                font.weight: Font.Medium
+                                                color: Material.foreground
+                                                elide: Text.ElideRight
+                                                Layout.fillWidth: true
+                                            }
+
+                                            Label {
+                                                text: modelData.email || ""
+                                                font.pixelSize: 13
+                                                color: Material.hintTextColor
+                                                elide: Text.ElideRight
+                                                Layout.fillWidth: true
+                                            }
+                                        }
+                                    }
+
+                                    // Status Column - MUST be 120px to match header
+                                    Item {
+                                        Layout.preferredWidth: 120
+
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: statusLabel.implicitWidth + 16
+                                            height: 28
+                                            radius: 14
+                                            color: {
+                                                var status = modelData.instructorStatus || ""
+                                                if (status === "pending") return Material.color(Material.Orange, Material.Shade100)
+                                                if (status === "verified") return Material.color(Material.Green, Material.Shade100)
+                                                if (status === "rejected") return Material.color(Material.Red, Material.Shade100)
+                                                return Material.color(Material.Grey, Material.Shade100)
+                                            }
+
+                                            Label {
+                                                id: statusLabel
+                                                anchors.centerIn: parent
+                                                text: {
+                                                    var status = modelData.instructorStatus || ""
+                                                    return status.charAt(0).toUpperCase() + status.slice(1)
+                                                }
+                                                font.pixelSize: 12
+                                                font.weight: Font.Medium
+                                                color: {
+                                                    var status = modelData.instructorStatus || ""
+                                                    if (status === "pending") return Material.color(Material.Orange, Material.Shade900)
+                                                    if (status === "verified") return Material.color(Material.Green, Material.Shade900)
+                                                    if (status === "rejected") return Material.color(Material.Red, Material.Shade900)
+                                                    return Material.color(Material.Grey, Material.Shade900)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Registered Column - MUST be 150px to match header
+                                    Label {
+                                        Layout.preferredWidth: 150
+                                        text: modelData.relativeDate || ""
+                                        font.pixelSize: 14
+                                        color: Material.hintTextColor
+                                    }
+
+                                    // Actions Column - fillWidth to match header
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+
+                                        // Pending status - show Approve and Reject buttons
+                                        Button {
+                                            visible: modelData.instructorStatus === "pending"
+                                            text: "Approve"
+                                            flat: false
+                                            Material.background: Material.color(Material.Green)
+                                            Material.foreground: "white"
+                                            onClicked: {
+                                                confirmDialog.instructorId = modelData.id
+                                                confirmDialog.instructorName = modelData.fullName
+                                                confirmDialog.action = "approve"
+                                                confirmDialog.open()
+                                            }
+                                        }
+
+                                        Button {
+                                            visible: modelData.instructorStatus === "pending"
+                                            text: "Reject"
+                                            flat: false
+                                            Material.background: Material.color(Material.Red)
+                                            Material.foreground: "white"
+                                            onClicked: {
+                                                confirmDialog.instructorId = modelData.id
+                                                confirmDialog.instructorName = modelData.fullName
+                                                confirmDialog.action = "reject"
+                                                confirmDialog.open()
+                                            }
+                                        }
+
+                                        // Verified status - show Revoke button
+                                        Button {
+                                            visible: modelData.instructorStatus === "verified"
+                                            text: "Revoke"
+                                            flat: false
+                                            Material.background: Material.color(Material.Orange)
+                                            Material.foreground: "white"
+                                            onClicked: {
+                                                confirmDialog.instructorId = modelData.id
+                                                confirmDialog.instructorName = modelData.fullName
+                                                confirmDialog.action = "revoke"
+                                                confirmDialog.open()
+                                            }
+                                        }
+
+                                        // Rejected status - show Approve button
+                                        Button {
+                                            visible: modelData.instructorStatus === "rejected"
+                                            text: "Approve"
+                                            flat: false
+                                            Material.background: Material.color(Material.Green)
+                                            Material.foreground: "white"
+                                            onClicked: {
+                                                confirmDialog.instructorId = modelData.id
+                                                confirmDialog.instructorName = modelData.fullName
+                                                confirmDialog.action = "approve"
+                                                confirmDialog.open()
+                                            }
+                                        }
+
+                                        Item { Layout.fillWidth: true }
+                                    }
                                 }
 
-                                onRevokeClicked: {
-                                    confirmDialog.instructorId = modelData.id
-                                    confirmDialog.instructorName = modelData.fullName
-                                    confirmDialog.action = "revoke"
-                                    confirmDialog.open()
+                                MouseArea {
+                                    id: mouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
                                 }
                             }
                         }

@@ -633,7 +633,6 @@ void ApiManager::getInstructors(const QString &status)
     });
 }
 
-// NEW METHOD - Add this to enable approve/reject/revoke functionality
 void ApiManager::updateInstructorStatus(const QString &instructorId, const QString &status)
 {
     emit requestStarted();
@@ -670,6 +669,442 @@ void ApiManager::updateInstructorStatus(const QString &instructorId, const QStri
             emit instructorStatusUpdated(response["data"].toObject());
         } else {
             emit instructorStatusUpdateFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::getCourseStats()
+{
+    emit requestStarted();
+
+    QNetworkRequest request = createRequest("/api/courses", true);
+
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit courseStatsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit courseStatsLoaded(response["data"].toObject());
+        } else {
+            emit courseStatsLoadFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::getCourses(const QString &status,
+                            const QString &search,
+                            int page,
+                            int limit)
+{
+    emit requestStarted();
+
+    QString endpoint = "/api/courses";
+    QStringList params;
+
+    if (!status.isEmpty()) {
+        params << QString("status=%1").arg(status);
+    }
+    if (!search.isEmpty()) {
+        params << QString("search=%1").arg(QString(QUrl::toPercentEncoding(search)));
+    }
+    params << QString("page=%1").arg(page);
+    params << QString("limit=%1").arg(limit);
+
+    if (!params.isEmpty()) {
+        endpoint += "?" + params.join("&");
+    }
+
+    QNetworkRequest request = createRequest(endpoint, true);
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit coursesLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit coursesLoaded(response["data"].toObject());
+        } else {
+            emit coursesLoadFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::deleteCourse(const QString &courseId)
+{
+    emit requestStarted();
+
+    QString endpoint = QString("/api/courses/%1").arg(courseId);
+    QNetworkRequest request = createRequest(endpoint, true);
+
+    QNetworkReply *reply = m_networkManager->deleteResource(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit courseDeleteFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit courseDeleted(response["data"].toObject());
+        } else {
+            emit courseDeleteFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::updateCourseStatus(const QString &courseId,
+                                    const QString &status,
+                                    const QString &rejectionReason)
+{
+    emit requestStarted();
+
+    QString endpoint = QString("/api/courses/%1/status").arg(courseId);
+    QNetworkRequest request = createRequest(endpoint, true);
+
+    QJsonObject json;
+    json["status"] = status;
+
+    // Add rejection reason if status is "rejected" and reason is provided
+    if (status == "rejected" && !rejectionReason.isEmpty()) {
+        json["rejectionReason"] = rejectionReason;
+    }
+
+    QNetworkReply *reply = m_networkManager->put(request, QJsonDocument(json).toJson());
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit courseStatusUpdateFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit courseStatusUpdated(response["data"].toObject());
+        } else {
+            emit courseStatusUpdateFailed(response["message"].toString());
+        }
+    });
+}
+void ApiManager::getStudents(const QString &isActive, const QString &search)
+{
+    emit requestStarted();
+
+    QString endpoint = "/api/students";
+    QStringList params;
+
+    if (!isActive.isEmpty()) {
+        params << QString("isActive=%1").arg(isActive);
+    }
+    if (!search.isEmpty()) {
+        params << QString("search=%1").arg(QString(QUrl::toPercentEncoding(search)));
+    }
+
+    if (!params.isEmpty()) {
+        endpoint += "?" + params.join("&");
+    }
+
+    QNetworkRequest request = createRequest(endpoint, true);
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit studentsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit studentsLoaded(response["data"].toObject());
+        } else {
+            emit studentsLoadFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::getTransactions(int page, int limit, const QString &status, const QString &search)
+{
+    emit requestStarted();
+
+    QString endpoint = "/api/transactions";
+    QStringList params;
+
+    params << QString("page=%1").arg(page);
+    params << QString("limit=%1").arg(limit);
+
+    if (!status.isEmpty()) {
+        params << QString("status=%1").arg(status);
+    }
+    if (!search.isEmpty()) {
+        params << QString("search=%1").arg(QString(QUrl::toPercentEncoding(search)));
+    }
+
+    if (!params.isEmpty()) {
+        endpoint += "?" + params.join("&");
+    }
+
+    QNetworkRequest request = createRequest(endpoint, true);
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit transactionsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit transactionsLoaded(response["data"].toObject());
+        } else {
+            emit transactionsLoadFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::getNotifications(int limit, const QString &status)
+{
+    emit requestStarted();
+
+    QString endpoint = "/api/notifications";
+    QStringList params;
+
+    params << QString("limit=%1").arg(limit);
+
+    if (!status.isEmpty()) {
+        params << QString("status=%1").arg(status);
+    }
+
+    if (!params.isEmpty()) {
+        endpoint += "?" + params.join("&");
+    }
+
+    QNetworkRequest request = createRequest(endpoint, true);
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit notificationsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            QJsonObject data = response["data"].toObject();
+            data["isRecent"] = false;
+            emit notificationsLoaded(data);
+        } else {
+            emit notificationsLoadFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::getRecentNotifications()
+{
+    emit requestStarted();
+
+    QNetworkRequest request = createRequest("/api/notifications?limit=10", true);
+    QNetworkReply *reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit notificationsLoadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            QJsonObject data = response["data"].toObject();
+            data["isRecent"] = true;
+            emit notificationsLoaded(data);
+        } else {
+            emit notificationsLoadFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::markNotificationAsRead(const QString &notificationId)
+{
+    emit requestStarted();
+
+    QNetworkRequest request = createRequest("/api/notifications/mark-read", true);
+
+    QJsonObject json;
+    json["notificationId"] = notificationId;
+
+    QNetworkReply *reply = m_networkManager->post(request, QJsonDocument(json).toJson());
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit markAsReadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit notificationMarkedAsRead(response["data"].toObject());
+        } else {
+            emit markAsReadFailed(response["message"].toString());
+        }
+    });
+}
+
+void ApiManager::markAllNotificationsAsRead()
+{
+    emit requestStarted();
+
+    QNetworkRequest request = createRequest("/api/notifications/mark-all-read", true);
+
+    QNetworkReply *reply = m_networkManager->post(request, QByteArray());
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        emit requestFinished();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                refreshAccessToken();
+            }
+
+            QJsonObject response = parseResponse(reply);
+            QString errorMsg = response.isEmpty() ?
+                                   reply->errorString() :
+                                   response["message"].toString();
+
+            emit markAllAsReadFailed(errorMsg);
+            return;
+        }
+
+        QJsonObject response = parseResponse(reply);
+
+        if (response["success"].toBool()) {
+            emit allMarkedAsRead(response["data"].toObject());
+        } else {
+            emit markAllAsReadFailed(response["message"].toString());
         }
     });
 }

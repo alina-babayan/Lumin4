@@ -12,7 +12,8 @@ ApplicationWindow {
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: authController.isLoggedIn ? dashboardComponent : loginComponent
+        // ALWAYS start with login page
+        initialItem: loginComponent
     }
 
     Component {
@@ -46,26 +47,17 @@ ApplicationWindow {
         }
     }
 
+    // DashboardPage owns the sidebar + internal StackLayout.
+    // All admin pages (Instructors, Courses, Users, Transactions, Notifications)
+    // live inside DashboardPage — Main does NOT push them separately.
     Component {
         id: dashboardComponent
         DashboardPage {
             onLogout: {
+                authController.logout()
                 stackView.clear()
                 stackView.push(loginComponent)
             }
-            onNavigateToInstructors: {
-                // FIXED: Actually navigate to Instructors page
-                stackView.push(instructorsComponent)
-            }
-        }
-    }
-
-    // NEW: Add Instructors component
-    Component {
-        id: instructorsComponent
-        InstructorsPage {
-            // Add back navigation if needed
-            // onNavigateBack: stackView.pop()
         }
     }
 
@@ -99,3 +91,5 @@ ApplicationWindow {
         }
     }
 }
+
+

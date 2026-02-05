@@ -17,5 +17,18 @@
         <file>InstructorRow.qml</file>
         <file>InstructorStatsCard.qml</file>
         <file>InstructorsPage.qml</file>
+        <file>CourseReviewDialog.qml</file>
+        <file>CourseStatsCard.qml</file>
+        <file>CoursesPage.qml</file>
+        <file>UsersPage.qml</file>
+        <file>UserRow.qml</file>
+        <file>UserDetailsDialog.qml</file>
+        <file>TransactionsPage.qml</file>
+        <file>TransactionRow.qml</file>
+        <file>NotificationBell.qml</file>
+        <file>NotificationItem.qml</file>
+        <file>NotificationsPage.qml</file>
+        <file>NotificationListItem.qml</file>
+        <file>SettingsPage.qml</file>
     </qresource>
 </RCC>

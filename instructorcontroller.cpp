@@ -1,4 +1,5 @@
 #include "instructorcontroller.h"
+#include <QJsonArray>
 #include <QDateTime>
 #include <QDebug>
 
@@ -128,7 +129,7 @@ void InstructorController::onInstructorStatusUpdated(const QJsonObject &data)
     }
 
     emit instructorUpdated(message);
-    loadInstructors(); // Refresh the list
+    loadInstructors();
 }
 
 void InstructorController::onInstructorStatusUpdateFailed(const QString &errorMessage)
@@ -225,3 +226,4 @@ QString InstructorController::formatRelativeDate(const QString &dateString) cons
         return QString("%1 year%2 ago").arg(years).arg(years > 1 ? "s" : "");
     }
 }
+

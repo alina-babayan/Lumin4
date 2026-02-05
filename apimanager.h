@@ -38,9 +38,18 @@ public:
 
     void getDashboardStats();
 
-    // Instructor Management - NEW
     void getInstructors(const QString &status = "");
     void updateInstructorStatus(const QString &instructorId, const QString &status);
+
+    void getCourseStats();
+    void getCourses(const QString &status = "",
+                    const QString &search = "",
+                    int page = 1,
+                    int limit = 12);
+    void deleteCourse(const QString &courseId);
+    void updateCourseStatus(const QString &courseId,
+                            const QString &status,
+                            const QString &rejectionReason = "");
 
     void setAccessToken(const QString &token);
     void setRefreshToken(const QString &token);
@@ -53,6 +62,16 @@ public:
 
     void setBaseUrl(const QString &url);
     QString baseUrl() const;
+
+    void getStudents(const QString &isActive = "", const QString &search = "");
+
+    void getTransactions(int page = 1, int limit = 20,
+                         const QString &status = "", const QString &search = "");
+
+    void getNotifications(int limit = 50, const QString &status = "");
+    void getRecentNotifications();
+    void markNotificationAsRead(const QString &notificationId);
+    void markAllNotificationsAsRead();
 
 signals:
     void loginSuccess(const QString &sessionToken, const QString &maskedEmail);
@@ -97,11 +116,34 @@ signals:
     void requestFinished();
     void networkError(const QString &errorMessage);
 
-    // Instructor Management Signals - NEW
     void instructorsLoaded(const QJsonObject &data);
     void instructorsLoadFailed(const QString &errorMessage);
     void instructorStatusUpdated(const QJsonObject &data);
     void instructorStatusUpdateFailed(const QString &errorMessage);
+
+    void courseStatsLoaded(const QJsonObject &data);
+    void courseStatsLoadFailed(const QString &errorMessage);
+
+    void coursesLoaded(const QJsonObject &data);
+    void coursesLoadFailed(const QString &errorMessage);
+    void courseDeleted(const QJsonObject &data);
+    void courseDeleteFailed(const QString &errorMessage);
+    void courseStatusUpdated(const QJsonObject &data);
+    void courseStatusUpdateFailed(const QString &errorMessage);
+
+    void studentsLoaded(const QJsonObject &data);
+    void studentsLoadFailed(const QString &errorMessage);
+
+    void transactionsLoaded(const QJsonObject &data);
+    void transactionsLoadFailed(const QString &errorMessage);
+
+    void notificationsLoaded(const QJsonObject &data);
+    void notificationsLoadFailed(const QString &errorMessage);
+    void notificationMarkedAsRead(const QJsonObject &data);
+    void markAsReadFailed(const QString &errorMessage);
+    void allMarkedAsRead(const QJsonObject &data);
+    void markAllAsReadFailed(const QString &errorMessage);
+
 
 private:
     QNetworkAccessManager *m_networkManager;
@@ -118,3 +160,5 @@ private slots:
 };
 
 #endif // APIMANAGER_H
+
+

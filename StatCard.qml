@@ -7,69 +7,51 @@ Rectangle {
     id: root
 
     property string title: ""
-    property int value: 0
+    property string value: "0"
     property string icon: ""
-    property color color: Material.accent
+    property color iconColor: Material.accent
+    property color backgroundColor: Material.color(Material.Blue, Material.Shade50)
 
-    radius: 12
+    radius: 8
     color: "white"
-    border.width: 1
     border.color: Material.dividerColor
+    border.width: 1
 
-    // Hover effect
-    scale: mouseArea.containsMouse ? 1.02 : 1.0
-
-    Behavior on scale {
-        NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
-    }
-
-    MouseArea {
-        id: mouseArea
+    RowLayout {
         anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-    }
+        anchors.margins: 20
+        spacing: 16
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 24
-        spacing: 12
+        Rectangle {
+            width: 48
+            height: 48
+            radius: 8
+            color: backgroundColor
 
-        RowLayout {
+            Label {
+                anchors.centerIn: parent
+                text: icon
+                font.pixelSize: 24
+                color: iconColor
+            }
+        }
+
+        ColumnLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: 4
 
-            Rectangle {
-                Layout.preferredWidth: 48
-                Layout.preferredHeight: 48
-                radius: 24
-                color: Qt.lighter(root.color, 1.8)
-
-                Label {
-                    anchors.centerIn: parent
-                    text: root.icon
-                    font.pixelSize: 24
-                }
+            Label {
+                text: title
+                font.pixelSize: 13
+                color: Material.hintTextColor
             }
 
-            Item { Layout.fillWidth: true }
+            Label {
+                text: value
+                font.pixelSize: 28
+                font.weight: Font.Bold
+                color: Material.foreground
+            }
         }
-
-        Label {
-            text: root.title
-            font.pixelSize: 14
-            color: Material.hintTextColor
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-        }
-
-        Label {
-            text: root.value
-            font.pixelSize: 36
-            font.weight: Font.Bold
-            color: root.color
-        }
-
-        Item { Layout.fillHeight: true }
     }
 }

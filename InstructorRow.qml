@@ -40,7 +40,7 @@ Rectangle {
 
         // Instructor Info Column
         RowLayout {
-            Layout.preferredWidth: 300
+            Layout.preferredWidth: 312
             spacing: 12
 
             // Profile Image
@@ -200,3 +200,4 @@ Rectangle {
         return Material.color(Material.Grey, Material.Shade900)
     }
 }
+

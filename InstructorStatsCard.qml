@@ -103,3 +103,5 @@ Rectangle {
         return "📊"
     }
 }
+
+

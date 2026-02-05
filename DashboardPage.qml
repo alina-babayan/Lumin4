@@ -10,8 +10,6 @@ Rectangle {
     signal logout()
     signal navigateToInstructors()
 
-    // Track current view: "dashboard" or "instructors"
-    property string currentView: "dashboard"
 
     property var pendingInstructors: []
     property int totalPending: 0
@@ -19,6 +17,8 @@ Rectangle {
     property int totalActivities: 0
     property int activitiesLimit: 10
     property bool loadingActivities: false
+
+    property string currentView: "dashboard"
 
     Component.onCompleted: {
         if (dashboardController) {
@@ -98,7 +98,6 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        // LEFT SIDEBAR - Always visible
         Rectangle {
             Layout.preferredWidth: 240
             Layout.fillHeight: true
@@ -147,7 +146,6 @@ Rectangle {
                     Layout.fillWidth: true
                     spacing: 4
 
-                    // Dashboard Nav Item
                     Rectangle {
                         Layout.fillWidth: true
                         height: 40
@@ -177,7 +175,6 @@ Rectangle {
                         }
                     }
 
-                    // Instructors Nav Item
                     Rectangle {
                         Layout.fillWidth: true
                         height: 40
@@ -205,7 +202,6 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 currentView = "instructors"
-                                // Load instructors when switching to this view
                                 if (instructorController) {
                                     instructorController.loadInstructors()
                                 }
@@ -217,19 +213,28 @@ Rectangle {
                         Layout.fillWidth: true
                         height: 40
                         radius: 6
-                        color: nav2MA.containsMouse ? "#F9FAFB" : "transparent"
+                        color: currentView === "courses" ? "#F3F4F6" : (nav2MA.containsMouse ? "#F9FAFB" : "transparent")
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
                             Text { text: "📚"; font.pixelSize: 16 }
-                            Text { text: "Courses"; color: "#6B7280"; font.pixelSize: 13 }
+                            Text {
+                                text: "Courses"
+                                color: currentView === "courses" ? "#18181B" : "#6B7280"
+                                font.pixelSize: 13
+                                font.weight: currentView === "courses" ? Font.Medium : Font.Normal
+                            }
                         }
                         MouseArea {
                             id: nav2MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                currentView = "courses"
+                                courseController.loadStats()
+                            }
                         }
                     }
 
@@ -237,19 +242,28 @@ Rectangle {
                         Layout.fillWidth: true
                         height: 40
                         radius: 6
-                        color: nav3MA.containsMouse ? "#F9FAFB" : "transparent"
+                        color: currentView === "users" ? "#F3F4F6" : (nav3MA.containsMouse ? "#F9FAFB" : "transparent")
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
                             Text { text: "👤"; font.pixelSize: 16 }
-                            Text { text: "Users"; color: "#6B7280"; font.pixelSize: 13 }
+                            Text {
+                                text: "Users"
+                                color: currentView === "users" ? "#18181B" : "#6B7280"
+                                font.pixelSize: 13
+                                font.weight: currentView === "users" ? Font.Medium : Font.Normal
+                            }
                         }
                         MouseArea {
                             id: nav3MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                currentView = "users"
+                                userController.loadStudents()
+                            }
                         }
                     }
 
@@ -257,19 +271,28 @@ Rectangle {
                         Layout.fillWidth: true
                         height: 40
                         radius: 6
-                        color: nav4MA.containsMouse ? "#F9FAFB" : "transparent"
+                        color: currentView === "transactions" ? "#F3F4F6" : (nav4MA.containsMouse ? "#F9FAFB" : "transparent")
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
                             Text { text: "💳"; font.pixelSize: 16 }
-                            Text { text: "Transactions"; color: "#6B7280"; font.pixelSize: 13 }
+                            Text {
+                                text: "Transactions"
+                                color: currentView === "transactions" ? "#18181B" : "#6B7280"
+                                font.pixelSize: 13
+                                font.weight: currentView === "transactions" ? Font.Medium : Font.Normal
+                            }
                         }
                         MouseArea {
                             id: nav4MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                currentView = "transactions"
+                                transactionController.loadTransactions()
+                            }
                         }
                     }
 
@@ -277,22 +300,31 @@ Rectangle {
                         Layout.fillWidth: true
                         height: 40
                         radius: 6
-                        color: nav5MA.containsMouse ? "#F9FAFB" : "transparent"
+                        color: currentView === "settings" ? "#F3F4F6" : (nav5MA.containsMouse ? "#F9FAFB" : "transparent")
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             spacing: 10
                             Text { text: "⚙️"; font.pixelSize: 16 }
-                            Text { text: "Settings"; color: "#6B7280"; font.pixelSize: 13 }
+                            Text {
+                                text: "Settings"
+                                color: currentView === "settings" ? "#18181B" : "#6B7280"
+                                font.pixelSize: 13
+                                font.weight: currentView === "settings" ? Font.Medium : Font.Normal
+                            }
                         }
                         MouseArea {
                             id: nav5MA
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                currentView = "settings"
+                            }
                         }
                     }
                 }
+
 
                 Item { Layout.fillHeight: true }
 
@@ -371,73 +403,328 @@ Rectangle {
             }
         }
 
-        // RIGHT CONTENT AREA - Switches between Dashboard and Instructors
-        StackLayout {
+        // RIGHT CONTENT AREA
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: currentView === "dashboard" ? 0 : 1
+            spacing: 0
+
+            // ===== SHARED HEADER (search + bell) — visible on ALL pages =====
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 70
+                color: "white"
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 1
+                    color: "#E5E7EB"
+                }
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 24
+                    anchors.rightMargin: 24
+                    spacing: 16
+                    TextField {
+                        Layout.preferredWidth: 300
+                        Layout.preferredHeight: 38
+                        placeholderText: "Search anything..."
+                        leftPadding: 38
+                        background: Rectangle {
+                            radius: 8
+                            color: "#F9FAFB"
+                            border.color: "#E5E7EB"
+                            border.width: 1
+                            Text {
+                                text: "🔍"
+                                font.pixelSize: 14
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: "#9CA3AF"
+                            }
+                        }
+                    }
+                    Item { Layout.fillWidth: true }
+
+                    // ===== NOTIFICATION BELL + POPUP =====
+                    Item {
+                        id: bellContainer
+                        width: 38
+                        height: 38
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 8
+                            color: bellMA.containsMouse ? "#F9FAFB" : "transparent"
+                            Text {
+                                text: "🔔"
+                                font.pixelSize: 18
+                                anchors.centerIn: parent
+                            }
+                            // Red unread-count badge
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.right: parent.right
+                                anchors.topMargin: 1
+                                anchors.rightMargin: 1
+                                width: Math.max(17, badgeText.implicitWidth + 9)
+                                height: 17
+                                radius: 9
+                                color: "#EF4444"
+                                visible: notificationController && notificationController.unreadCount > 0
+                                Text {
+                                    id: badgeText
+                                    anchors.centerIn: parent
+                                    text: notificationController ? notificationController.unreadCount.toString() : "0"
+                                    font.pixelSize: 10
+                                    font.weight: Font.Bold
+                                    color: "white"
+                                }
+                            }
+                            MouseArea {
+                                id: bellMA
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (bellPopup.opened) {
+                                        bellPopup.close()
+                                    } else {
+                                        notificationController.loadRecentNotifications()
+                                        bellPopup.open()
+                                    }
+                                }
+                            }
+                        }
+
+                        // ===== POPUP =====
+                        Popup {
+                            id: bellPopup
+                            x: bellContainer.width - width + 10
+                            y: bellContainer.height + 6
+                            width: 360
+                            height: Math.min(520, popupCol.implicitHeight + 2)
+                            padding: 0
+                            closePolicy: Popup.CloseOnEscape | Popup.CloseOnClickOutside
+
+                            background: Rectangle {
+                                radius: 12
+                                color: "white"
+                                border.color: "#E5E7EB"
+                                border.width: 1
+                            }
+
+                            ColumnLayout {
+                                id: popupCol
+                                anchors.fill: parent
+                                spacing: 0
+
+                                // Header
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 52
+                                    color: "#18181B"
+                                    topLeftRadius: 12
+                                    topRightRadius: 12
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 16
+                                        anchors.rightMargin: 16
+                                        Text {
+                                            text: "Notifications"
+                                            color: "white"
+                                            font.pixelSize: 15
+                                            font.weight: Font.DemiBold
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: "Mark all as read"
+                                            color: "#60A5FA"
+                                            font.pixelSize: 12
+                                            font.weight: Font.Medium
+                                            visible: notificationController && notificationController.unreadCount > 0
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: notificationController.markAllAsRead()
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // List
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: Math.min(390, bellList.contentHeight + 8)
+                                    clip: true
+
+                                    ListView {
+                                        id: bellList
+                                        width: parent.width
+                                        model: notificationController ? notificationController.recentNotifications : []
+                                        spacing: 0
+
+                                        delegate: Rectangle {
+                                            width: bellList.width
+                                            height: 76
+                                            color: {
+                                                if (itemMA.pressed)  return "#F3F4F6"
+                                                if (itemMA.containsMouse) return "#F9FAFB"
+                                                if (!modelData.isRead)  return "#EFF6FF"
+                                                return "white"
+                                            }
+                                            // Divider
+                                            Rectangle {
+                                                anchors.bottom: parent.bottom
+                                                width: parent.width
+                                                height: 1
+                                                color: "#F3F4F6"
+                                            }
+                                            // Left-edge unread indicator
+                                            Rectangle {
+                                                anchors.left: parent.left
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                width: 3
+                                                height: 36
+                                                radius: 2
+                                                color: "#3B82F6"
+                                                visible: !modelData.isRead
+                                            }
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: modelData.isRead ? 12 : 18
+                                                anchors.rightMargin: 12
+                                                anchors.topMargin: 12
+                                                anchors.bottomMargin: 12
+                                                spacing: 10
+
+                                                // Type-icon circle
+                                                Rectangle {
+                                                    width: 36
+                                                    height: 36
+                                                    radius: 18
+                                                    color: {
+                                                        var t = modelData.type || ""
+                                                        if (t === "course_submitted")  return "#DBEAFE"
+                                                        if (t === "course_approved")   return "#DCFCE7"
+                                                        if (t === "course_rejected")   return "#FEE2E2"
+                                                        if (t === "instructor_request") return "#EDE9FE"
+                                                        if (t === "new_student")       return "#F3E8FF"
+                                                        if (t === "transaction")       return "#D1FAE5"
+                                                        return "#F3F4F6"
+                                                    }
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        font.pixelSize: 16
+                                                        text: {
+                                                            var t = modelData.type || ""
+                                                            if (t === "course_submitted")  return "📚"
+                                                            if (t === "course_approved")   return "✅"
+                                                            if (t === "course_rejected")   return "❌"
+                                                            if (t === "instructor_request") return "👤"
+                                                            if (t === "new_student")       return "👥"
+                                                            if (t === "transaction")       return "💳"
+                                                            return "🔔"
+                                                        }
+                                                    }
+                                                }
+
+                                                ColumnLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 2
+                                                    Text {
+                                                        text: modelData.title || ""
+                                                        font.pixelSize: 13
+                                                        font.weight: modelData.isRead ? Font.Normal : Font.DemiBold
+                                                        color: "#18181B"
+                                                        elide: Text.ElideRight
+                                                        Layout.fillWidth: true
+                                                    }
+                                                    Text {
+                                                        text: modelData.message || ""
+                                                        font.pixelSize: 12
+                                                        color: "#6B7280"
+                                                        elide: Text.ElideRight
+                                                        Layout.fillWidth: true
+                                                    }
+                                                    Text {
+                                                        text: modelData.relativeTime || ""
+                                                        font.pixelSize: 11
+                                                        color: "#9CA3AF"
+                                                    }
+                                                }
+                                            }
+                                            MouseArea {
+                                                id: itemMA
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    if (!modelData.isRead) {
+                                                        notificationController.markAsRead(modelData.id)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Footer: "View all notifications"
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 44
+                                    color: "#F9FAFB"
+                                    bottomLeftRadius: 12
+                                    bottomRightRadius: 12
+                                    Rectangle {
+                                        anchors.top: parent.top
+                                        width: parent.width
+                                        height: 1
+                                        color: "#E5E7EB"
+                                    }
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "View all notifications"
+                                        color: "#3B82F6"
+                                        font.pixelSize: 13
+                                        font.weight: Font.Medium
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                bellPopup.close()
+                                                currentView = "notifications"
+                                                notificationController.loadNotifications()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // ===== END BELL =====
+                }
+            }
+            // ===== END SHARED HEADER =====
+
+            // Page switcher
+            StackLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: currentView === "dashboard" ? 0 :
+                              currentView === "instructors" ? 1 :
+                              currentView === "courses" ? 2 :
+                              currentView === "users" ? 3 :
+                              currentView === "transactions" ? 4 :
+                              currentView === "notifications" ? 5 :
+                              currentView === "settings" ? 6 : 0
 
             // ========== PAGE 0: DASHBOARD VIEW ==========
             Item {
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 70
-                        color: "white"
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            width: parent.width
-                            height: 1
-                            color: "#E5E7EB"
-                        }
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 24
-                            anchors.rightMargin: 24
-                            spacing: 16
-                            TextField {
-                                Layout.preferredWidth: 300
-                                Layout.preferredHeight: 38
-                                placeholderText: "Search anything..."
-                                leftPadding: 38
-                                background: Rectangle {
-                                    radius: 8
-                                    color: "#F9FAFB"
-                                    border.color: "#E5E7EB"
-                                    border.width: 1
-                                    Text {
-                                        text: "🔍"
-                                        font.pixelSize: 14
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 12
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: "#9CA3AF"
-                                    }
-                                }
-                            }
-                            Item { Layout.fillWidth: true }
-                            Rectangle {
-                                width: 38
-                                height: 38
-                                radius: 8
-                                color: notifMA.containsMouse ? "#F9FAFB" : "transparent"
-                                Text {
-                                    text: "🔔"
-                                    font.pixelSize: 18
-                                    anchors.centerIn: parent
-                                }
-                                MouseArea {
-                                    id: notifMA
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                }
-                            }
-                        }
-                    }
 
                     Flickable {
                         Layout.fillWidth: true
@@ -794,15 +1081,13 @@ Rectangle {
                                             color: "#F3F4F6"
                                         }
 
-                                        ColumnLayout {
+                                        Item {
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
                                             visible: pendingInstructors.length === 0
 
-                                            Item { Layout.fillHeight: true }
-
                                             ColumnLayout {
-                                                Layout.alignment: Qt.AlignCenter
+                                                anchors.centerIn: parent
                                                 spacing: 8
 
                                                 Text {
@@ -818,8 +1103,6 @@ Rectangle {
                                                     Layout.alignment: Qt.AlignHCenter
                                                 }
                                             }
-
-                                            Item { Layout.fillHeight: true }
                                         }
 
                                         ScrollView {
@@ -926,15 +1209,13 @@ Rectangle {
                                             color: "#F3F4F6"
                                         }
 
-                                        ColumnLayout {
+                                        Item {
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
                                             visible: !loadingActivities && recentActivities.length === 0
 
-                                            Item { Layout.fillHeight: true }
-
                                             ColumnLayout {
-                                                Layout.alignment: Qt.AlignCenter
+                                                anchors.centerIn: parent
                                                 spacing: 8
 
                                                 Text {
@@ -957,8 +1238,6 @@ Rectangle {
                                                     Layout.alignment: Qt.AlignHCenter
                                                 }
                                             }
-
-                                            Item { Layout.fillHeight: true }
                                         }
                                     }
                                 }
@@ -968,10 +1247,31 @@ Rectangle {
                 }
             }
 
-            // ========== PAGE 1: INSTRUCTORS VIEW ==========
+            // ========== PAGE 1: INSTRUCTORS ==========
             InstructorsPage {
-                // Full instructors management page loads here
+            }
+
+            // ========== PAGE 2: COURSES ==========
+            CoursesPage {
+            }
+
+            // ========== PAGE 3: USERS ==========
+            UsersPage {
+            }
+
+            // ========== PAGE 4: TRANSACTIONS ==========
+            TransactionsPage {
+            }
+
+            // ========== PAGE 5: NOTIFICATIONS ==========
+            NotificationsPage {
+            }
+
+            // ========== PAGE 6: SETTINGS ==========
+            SettingsPage {
+            }
             }
         }
     }
 }
+
