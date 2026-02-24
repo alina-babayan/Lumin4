@@ -32,6 +32,7 @@ public:
     Q_INVOKABLE void loadStats();
     Q_INVOKABLE void clearError();
     Q_INVOKABLE void refresh();
+    Q_INVOKABLE void reloadTokens();   // ← reloads auth token from QSettings
 
 signals:
     void isLoadingChanged();

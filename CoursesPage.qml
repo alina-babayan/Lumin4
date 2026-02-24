@@ -785,9 +785,15 @@ Item {
                                             ToolTip.text: "Edit"
                                             ToolTip.visible: hovered
                                             onClicked: {
-                                                successNotification.show("Edit Course page - Coming soon!")
-                                                // TODO: Navigate to edit course page
-                                                // stackView.push(editCourseComponent, { courseId: modelData.id })
+                                                // Navigate to EditCoursePage via DashboardPage
+                                                var dash = root
+                                                while (dash && !dash.hasOwnProperty("editCourseId")) {
+                                                    dash = dash.parent
+                                                }
+                                                if (dash) {
+                                                    dash.editCourseId = modelData.id
+                                                    dash.currentView = "edit_course"
+                                                }
                                             }
                                         }
 
@@ -797,9 +803,15 @@ Item {
                                             ToolTip.text: "Review"
                                             ToolTip.visible: hovered
                                             onClicked: {
-                                                reviewDialog.courseId = modelData.id
-                                                reviewDialog.courseTitle = modelData.title
-                                                reviewDialog.open()
+                                                // Navigate to ReviewCoursePage via DashboardPage
+                                                var dash = root
+                                                while (dash && !dash.hasOwnProperty("reviewCourseId")) {
+                                                    dash = dash.parent
+                                                }
+                                                if (dash) {
+                                                    dash.reviewCourseId = modelData.id
+                                                    dash.currentView = "review_course"
+                                                }
                                             }
                                         }
 
@@ -987,13 +999,13 @@ Item {
     CourseReviewDialog {
         id: reviewDialog
 
-        onApproved: {
+        onCourseApproved: {
             successNotification.show("✓ Course approved and published successfully!")
             courseController.refresh()
             loadCourses()
         }
 
-        onRejected: {
+        onCourseRejected: {
             successNotification.show("Course rejected. Instructor has been notified.")
             courseController.refresh()
             loadCourses()

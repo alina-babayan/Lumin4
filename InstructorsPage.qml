@@ -1,581 +1,630 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
 Item {
     id: root
 
-    // Load instructors when page becomes visible
     Component.onCompleted: {
+        instructorController.reloadTokens()
         instructorController.loadInstructors()
+    }
+
+    // Toast notification
+    property string toastMessage: ""
+    property bool toastSuccess: true
+
+    Timer {
+        id: toastTimer
+        interval: 3500
+        onTriggered: toastMessage = ""
+    }
+
+    function showToast(msg, success) {
+        toastMessage = msg
+        toastSuccess = success !== false
+        toastTimer.restart()
     }
 
     Connections {
         target: instructorController
-
         function onInstructorUpdated(message) {
-            successNotification.show(message)
+            showToast(message, true)
         }
-
         function onActionFailed(error) {
-            errorNotification.show(error)
+            showToast(error, false)
         }
     }
 
-    ColumnLayout {
+    Rectangle {
         anchors.fill: parent
-        anchors.margins: 32
-        spacing: 24
+        color: "#FAFAFA"
 
-        // Page Header
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 16
-
-            Label {
-                text: "Instructors Management"
-                font.pixelSize: 28
-                font.weight: Font.DemiBold
-                color: Material.foreground
-            }
-
-            Item { Layout.fillWidth: true }
-
-            Button {
-                text: "Refresh"
-                flat: true
-                icon.source: "qrc:/icons/refresh.svg"
-                onClicked: instructorController.refresh()
-                enabled: !instructorController.isLoading
-            }
-        }
-
-        // Statistics Cards (Task 2.1)
-        GridLayout {
-            Layout.fillWidth: true
-            columns: 4
-            columnSpacing: 16
-            rowSpacing: 16
-
-            InstructorStatsCard {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 120
-                title: "Total Instructors"
-                value: instructorController.totalInstructors
-                iconColor: Material.color(Material.Blue)
-                backgroundColor: Material.color(Material.Blue, Material.Shade50)
-            }
-
-            InstructorStatsCard {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 120
-                title: "Pending Requests"
-                value: instructorController.pendingInstructors
-                iconColor: Material.color(Material.Orange)
-                backgroundColor: Material.color(Material.Orange, Material.Shade50)
-                showBadge: instructorController.pendingInstructors > 0
-            }
-
-            InstructorStatsCard {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 120
-                title: "Verified"
-                value: instructorController.verifiedInstructors
-                iconColor: Material.color(Material.Green)
-                backgroundColor: Material.color(Material.Green, Material.Shade50)
-            }
-
-            InstructorStatsCard {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 120
-                title: "Rejected"
-                value: instructorController.rejectedInstructors
-                iconColor: Material.color(Material.Red)
-                backgroundColor: Material.color(Material.Red, Material.Shade50)
-            }
-        }
-
-        // Filters Section (Task 2.2)
+        // Toast Banner
         Rectangle {
-            Layout.fillWidth: true
-            height: filtersLayout.implicitHeight + 32
-            color: Material.backgroundColor
-            radius: 8
-            border.color: Material.dividerColor
+            id: toastBar
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: toastText.implicitWidth + 48
+            height: 44
+            radius: 22
+            color: root.toastSuccess ? "#DCFCE7" : "#FEE2E2"
+            border.color: root.toastSuccess ? "#86EFAC" : "#FCA5A5"
             border.width: 1
+            visible: root.toastMessage.length > 0
+            z: 10
+            anchors.topMargin: 16
 
-            ColumnLayout {
-                id: filtersLayout
-                anchors.fill: parent
-                anchors.margins: 16
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: 8
+                Text {
+                    text: root.toastSuccess ? "✓" : "✕"
+                    font.pixelSize: 14
+                    color: root.toastSuccess ? "#16A34A" : "#DC2626"
+                }
+                Text {
+                    id: toastText
+                    text: root.toastMessage
+                    font.pixelSize: 13
+                    color: root.toastSuccess ? "#15803D" : "#DC2626"
+                }
+            }
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 32
+            spacing: 24
+
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+                ColumnLayout {
+                    spacing: 4
+                    Text {
+                        text: "Instructors Management"
+                        font.pixelSize: 24
+                        font.weight: Font.DemiBold
+                        color: "#18181B"
+                    }
+                    Text {
+                        text: "Manage instructor accounts and applications"
+                        font.pixelSize: 13
+                        color: "#6B7280"
+                    }
+                }
+                Item { Layout.fillWidth: true }
+                Rectangle {
+                    height: 36
+                    width: refreshBtnText.implicitWidth + 24
+                    radius: 6
+                    color: refreshBtnMA.containsMouse ? "#F3F4F6" : "white"
+                    border.color: "#E5E7EB"
+                    border.width: 1
+                    Text {
+                        id: refreshBtnText
+                        anchors.centerIn: parent
+                        text: "↻ Refresh"
+                        font.pixelSize: 13
+                        color: "#6B7280"
+                    }
+                    MouseArea {
+                        id: refreshBtnMA
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            instructorController.reloadTokens()
+                            instructorController.refresh()
+                        }
+                    }
+                }
+            }
+
+            // Stats Cards
+            RowLayout {
+                Layout.fillWidth: true
                 spacing: 16
 
-                // Status Filter Tabs
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
+                Repeater {
+                    model: [
+                        { title: "Total Instructors", icon: "👥", bg: "#EEF2FF", val: instructorController.totalInstructors },
+                        { title: "Pending Requests",  icon: "⏳", bg: "#FEF3C7", val: instructorController.pendingInstructors },
+                        { title: "Verified",          icon: "✓",  bg: "#DCFCE7", val: instructorController.verifiedInstructors },
+                        { title: "Rejected",          icon: "✕",  bg: "#FEE2E2", val: instructorController.rejectedInstructors }
+                    ]
 
-                    Repeater {
-                        model: [
-                            { label: "All", value: "all" },
-                            { label: "Pending", value: "pending", count: instructorController.pendingInstructors },
-                            { label: "Verified", value: "verified" },
-                            { label: "Rejected", value: "rejected" }
-                        ]
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 110
+                        radius: 10
+                        color: "white"
+                        border.color: "#E5E7EB"
+                        border.width: 1
 
-                        Button {
-                            text: {
-                                let label = modelData.label
-                                if (modelData.count !== undefined && modelData.count > 0) {
-                                    label += " (" + modelData.count + ")"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 18
+                            spacing: 14
+
+                            Rectangle {
+                                width: 44; height: 44; radius: 10
+                                color: modelData.bg
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.icon
+                                    font.pixelSize: 20
                                 }
-                                return label
                             }
-                            flat: instructorController.currentStatus !== modelData.value
-                            highlighted: instructorController.currentStatus === modelData.value
-                            onClicked: instructorController.setStatusFilter(modelData.value)
-                            Material.background: instructorController.currentStatus === modelData.value ?
-                                               Material.accent : "transparent"
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+                                Text {
+                                    text: modelData.title
+                                    font.pixelSize: 12
+                                    color: "#6B7280"
+                                }
+                                Text {
+                                    text: modelData.val.toString()
+                                    font.pixelSize: 30
+                                    font.weight: Font.Bold
+                                    color: "#18181B"
+                                }
+                            }
                         }
                     }
-
-                    Item { Layout.fillWidth: true }
                 }
+            }
 
-                // Search Bar
-                RowLayout {
-                    Layout.fillWidth: true
+            // Filter Tabs + Search
+            Rectangle {
+                Layout.fillWidth: true
+                height: filterCol.implicitHeight + 24
+                radius: 10
+                color: "white"
+                border.color: "#E5E7EB"
+                border.width: 1
+
+                ColumnLayout {
+                    id: filterCol
+                    anchors.fill: parent
+                    anchors.margins: 12
                     spacing: 12
 
-                    TextField {
-                        id: searchField
+                    // Status tabs
+                    RowLayout {
                         Layout.fillWidth: true
-                        placeholderText: "Search by name or email..."
-                        selectByMouse: true
-                        onTextChanged: searchTimer.restart()
+                        spacing: 6
 
-                        Timer {
-                            id: searchTimer
-                            interval: 500
-                            onTriggered: instructorController.setSearchQuery(searchField.text)
+                        Repeater {
+                            model: [
+                                { label: "All",     value: "all" },
+                                { label: "Pending (" + instructorController.pendingInstructors + ")", value: "pending" },
+                                { label: "Verified", value: "verified" },
+                                { label: "Rejected", value: "rejected" }
+                            ]
+
+                            Rectangle {
+                                height: 34
+                                width: tabLbl.implicitWidth + 24
+                                radius: 17
+                                color: {
+                                    var active = instructorController.currentStatus === modelData.value
+                                    if (active) return "#E91E8C"
+                                    if (tabMA.containsMouse) return "#F3F4F6"
+                                    return "transparent"
+                                }
+                                Text {
+                                    id: tabLbl
+                                    anchors.centerIn: parent
+                                    text: modelData.label
+                                    font.pixelSize: 13
+                                    color: instructorController.currentStatus === modelData.value ? "white" : "#6B7280"
+                                }
+                                MouseArea {
+                                    id: tabMA
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: instructorController.setStatusFilter(modelData.value)
+                                }
+                            }
                         }
+                        Item { Layout.fillWidth: true }
                     }
 
-                    Button {
-                        text: "Search"
-                        highlighted: true
-                        onClicked: instructorController.setSearchQuery(searchField.text)
-                        enabled: !instructorController.isLoading
-                    }
+                    // Search bar
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
 
-                    Button {
-                        text: "Clear"
-                        flat: true
-                        visible: searchField.text.length > 0
-                        onClicked: {
-                            searchField.text = ""
-                            instructorController.setSearchQuery("")
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 40
+                            radius: 6
+                            color: "white"
+                            border.color: "#E5E7EB"
+                            border.width: 1
+
+                            TextInput {
+                                id: searchInput
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                verticalAlignment: TextInput.AlignVCenter
+                                font.pixelSize: 13
+                                color: "#18181B"
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "🔍 Search by name or email..."
+                                    font.pixelSize: 13
+                                    color: "#9CA3AF"
+                                    visible: searchInput.text.length === 0
+                                }
+
+                                onTextChanged: searchTimer.restart()
+
+                                Timer {
+                                    id: searchTimer
+                                    interval: 500
+                                    onTriggered: instructorController.setSearchQuery(searchInput.text)
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            height: 40
+                            width: searchBtnText.implicitWidth + 24
+                            radius: 6
+                            color: searchBtnMA.containsMouse ? "#C81779" : "#E91E8C"
+
+                            Text {
+                                id: searchBtnText
+                                anchors.centerIn: parent
+                                text: "Search"
+                                font.pixelSize: 13
+                                color: "white"
+                            }
+                            MouseArea {
+                                id: searchBtnMA
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: instructorController.setSearchQuery(searchInput.text)
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Instructors Table (Task 2.3)
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: Material.backgroundColor
-            radius: 8
-            border.color: Material.dividerColor
-            border.width: 1
+            // Table
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: 10
+                color: "white"
+                border.color: "#E5E7EB"
+                border.width: 1
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 0
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 0
 
-                // Table Header
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 56
-                    color: Material.color(Material.Grey, Material.Shade100)
-                    radius: 8
+                    // Table Header
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 44
+                        color: "#F9FAFB"
+                        radius: 10
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 24
-                        anchors.rightMargin: 24
-                        spacing: 16
-
-                        Label {
-                            Layout.preferredWidth: 312
-                            text: "Instructor"
-                            font.weight: Font.DemiBold
-                            color: Material.foreground
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            width: parent.width
+                            height: 1
+                            color: "#E5E7EB"
                         }
 
-                        Label {
-                            Layout.preferredWidth: 120
-                            text: "Status"
-                            font.weight: Font.DemiBold
-                            color: Material.foreground
-                        }
-
-                        Label {
-                            Layout.preferredWidth: 150
-                            text: "Registered"
-                            font.weight: Font.DemiBold
-                            color: Material.foreground
-                        }
-
-                        Label {
-                            Layout.fillWidth: true
-                            text: "Actions"
-                            font.weight: Font.DemiBold
-                            color: Material.foreground
-                        }
-                    }
-                }
-
-                // Table Content
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-
-                    // Loading Indicator
-                    BusyIndicator {
-                        anchors.centerIn: parent
-                        running: instructorController.isLoading
-                        visible: instructorController.isLoading
-                    }
-
-                    // Empty State
-                    ColumnLayout {
-                        anchors.centerIn: parent
-                        spacing: 16
-                        visible: !instructorController.isLoading &&
-                                instructorController.instructors.length === 0
-
-                        Label {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: "No instructors found"
-                            font.pixelSize: 18
-                            color: Material.hintTextColor
-                        }
-
-                        Label {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: "Try adjusting your filters or search query"
-                            color: Material.hintTextColor
-                        }
-                    }
-
-                    // Instructors List
-                    ScrollView {
-                        anchors.fill: parent
-                        visible: !instructorController.isLoading &&
-                                instructorController.instructors.length > 0
-                        clip: true
-
-                        ListView {
-                            id: instructorsList
-                            model: instructorController.instructors
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 20
+                            anchors.rightMargin: 20
                             spacing: 0
 
-                            delegate: Rectangle {
-                                width: instructorsList.width
-                                height: 80
-                                color: mouseArea.containsMouse ? Material.color(Material.Grey, Material.Shade50) : "transparent"
+                            Text {
+                                Layout.preferredWidth: 280
+                                text: "Instructor"
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                color: "#6B7280"
+                            }
+                            Text {
+                                Layout.preferredWidth: 120
+                                text: "Status"
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                color: "#6B7280"
+                            }
+                            Text {
+                                Layout.preferredWidth: 130
+                                text: "Registered"
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                color: "#6B7280"
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Actions"
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                color: "#6B7280"
+                            }
+                        }
+                    }
 
-                                Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    width: parent.width
-                                    height: 1
-                                    color: Material.dividerColor
-                                }
+                    // Table Body
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
 
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 24
-                                    anchors.rightMargin: 24
-                                    spacing: 16
+                        // Loading
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 12
+                            visible: instructorController.isLoading
+                            BusyIndicator {
+                                Layout.alignment: Qt.AlignHCenter
+                                running: instructorController.isLoading
+                                palette.dark: "#E91E8C"
+                            }
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "Loading instructors..."
+                                font.pixelSize: 13
+                                color: "#9CA3AF"
+                            }
+                        }
 
-                                    // Instructor Info Column - MUST be 312px to match header
-                                    RowLayout {
-                                        Layout.preferredWidth: 312
-                                        spacing: 12
+                        // Empty state
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 12
+                            visible: !instructorController.isLoading && instructorController.instructors.length === 0
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "👥"
+                                font.pixelSize: 48
+                            }
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "No instructors found"
+                                font.pixelSize: 15
+                                font.weight: Font.Medium
+                                color: "#18181B"
+                            }
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "Try changing filters or search query"
+                                font.pixelSize: 13
+                                color: "#9CA3AF"
+                            }
+                        }
 
-                                        // Profile Image
-                                        Rectangle {
-                                            width: 48
-                                            height: 48
-                                            radius: 24
-                                            color: Material.color(Material.Grey, Material.Shade200)
+                        // Instructor list
+                        ScrollView {
+                            anchors.fill: parent
+                            visible: !instructorController.isLoading && instructorController.instructors.length > 0
+                            clip: true
+                            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-                                            Label {
-                                                anchors.centerIn: parent
-                                                text: {
-                                                    var initials = ""
-                                                    if (modelData.firstName) initials += modelData.firstName.charAt(0).toUpperCase()
-                                                    if (modelData.lastName) initials += modelData.lastName.charAt(0).toUpperCase()
-                                                    return initials || "?"
-                                                }
-                                                font.pixelSize: 18
-                                                font.weight: Font.DemiBold
-                                                color: Material.color(Material.Grey, Material.Shade700)
-                                            }
-                                        }
+                            ColumnLayout {
+                                width: parent.width
+                                spacing: 0
 
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 2
+                                Repeater {
+                                    model: instructorController.instructors
 
-                                            Label {
-                                                text: modelData.fullName || ""
-                                                font.pixelSize: 15
-                                                font.weight: Font.Medium
-                                                color: Material.foreground
-                                                elide: Text.ElideRight
-                                                Layout.fillWidth: true
-                                            }
-
-                                            Label {
-                                                text: modelData.email || ""
-                                                font.pixelSize: 13
-                                                color: Material.hintTextColor
-                                                elide: Text.ElideRight
-                                                Layout.fillWidth: true
-                                            }
-                                        }
-                                    }
-
-                                    // Status Column - MUST be 120px to match header
-                                    Item {
-                                        Layout.preferredWidth: 120
-
-                                        Rectangle {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: statusLabel.implicitWidth + 16
-                                            height: 28
-                                            radius: 14
-                                            color: {
-                                                var status = modelData.instructorStatus || ""
-                                                if (status === "pending") return Material.color(Material.Orange, Material.Shade100)
-                                                if (status === "verified") return Material.color(Material.Green, Material.Shade100)
-                                                if (status === "rejected") return Material.color(Material.Red, Material.Shade100)
-                                                return Material.color(Material.Grey, Material.Shade100)
-                                            }
-
-                                            Label {
-                                                id: statusLabel
-                                                anchors.centerIn: parent
-                                                text: {
-                                                    var status = modelData.instructorStatus || ""
-                                                    return status.charAt(0).toUpperCase() + status.slice(1)
-                                                }
-                                                font.pixelSize: 12
-                                                font.weight: Font.Medium
-                                                color: {
-                                                    var status = modelData.instructorStatus || ""
-                                                    if (status === "pending") return Material.color(Material.Orange, Material.Shade900)
-                                                    if (status === "verified") return Material.color(Material.Green, Material.Shade900)
-                                                    if (status === "rejected") return Material.color(Material.Red, Material.Shade900)
-                                                    return Material.color(Material.Grey, Material.Shade900)
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // Registered Column - MUST be 150px to match header
-                                    Label {
-                                        Layout.preferredWidth: 150
-                                        text: modelData.relativeDate || ""
-                                        font.pixelSize: 14
-                                        color: Material.hintTextColor
-                                    }
-
-                                    // Actions Column - fillWidth to match header
-                                    RowLayout {
+                                    Rectangle {
                                         Layout.fillWidth: true
-                                        spacing: 8
+                                        height: 72
+                                        color: rowMA.containsMouse ? "#F9FAFB" : "transparent"
 
-                                        // Pending status - show Approve and Reject buttons
-                                        Button {
-                                            visible: modelData.instructorStatus === "pending"
-                                            text: "Approve"
-                                            flat: false
-                                            Material.background: Material.color(Material.Green)
-                                            Material.foreground: "white"
-                                            onClicked: {
-                                                confirmDialog.instructorId = modelData.id
-                                                confirmDialog.instructorName = modelData.fullName
-                                                confirmDialog.action = "approve"
-                                                confirmDialog.open()
+                                        Rectangle {
+                                            anchors.bottom: parent.bottom
+                                            width: parent.width
+                                            height: 1
+                                            color: "#F3F4F6"
+                                        }
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 20
+                                            anchors.rightMargin: 20
+                                            spacing: 0
+
+                                            // Instructor info
+                                            RowLayout {
+                                                Layout.preferredWidth: 280
+                                                spacing: 12
+
+                                                Rectangle {
+                                                    width: 40; height: 40; radius: 20
+                                                    color: "#EEF2FF"
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: modelData.firstName ? modelData.firstName.charAt(0).toUpperCase() : "?"
+                                                        font.pixelSize: 16
+                                                        font.weight: Font.Medium
+                                                        color: "#6366F1"
+                                                    }
+                                                }
+
+                                                ColumnLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 2
+                                                    Text {
+                                                        text: modelData.fullName || "Unknown"
+                                                        font.pixelSize: 13
+                                                        font.weight: Font.Medium
+                                                        color: "#18181B"
+                                                        elide: Text.ElideRight
+                                                        Layout.fillWidth: true
+                                                    }
+                                                    Text {
+                                                        text: modelData.email || ""
+                                                        font.pixelSize: 12
+                                                        color: "#6B7280"
+                                                        elide: Text.ElideRight
+                                                        Layout.fillWidth: true
+                                                    }
+                                                }
+                                            }
+
+                                            // Status Badge
+                                            Rectangle {
+                                                Layout.preferredWidth: 120
+                                                height: 24
+                                                radius: 12
+                                                color: {
+                                                    var s = modelData.instructorStatus || ""
+                                                    if (s === "verified") return "#DCFCE7"
+                                                    if (s === "rejected") return "#FEE2E2"
+                                                    return "#FEF3C7"
+                                                }
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: {
+                                                        var s = modelData.instructorStatus || "pending"
+                                                        return s.charAt(0).toUpperCase() + s.slice(1)
+                                                    }
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.Medium
+                                                    color: {
+                                                        var s = modelData.instructorStatus || ""
+                                                        if (s === "verified") return "#16A34A"
+                                                        if (s === "rejected") return "#DC2626"
+                                                        return "#D97706"
+                                                    }
+                                                }
+                                            }
+
+                                            // Registered date
+                                            Text {
+                                                Layout.preferredWidth: 130
+                                                text: modelData.relativeDate || "Unknown"
+                                                font.pixelSize: 13
+                                                color: "#6B7280"
+                                            }
+
+                                            // Action Buttons
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 8
+
+                                                // Approve button - show for pending/rejected
+                                                Rectangle {
+                                                    height: 32
+                                                    width: approveTxt.implicitWidth + 20
+                                                    radius: 6
+                                                    visible: modelData.instructorStatus !== "verified"
+                                                    color: approveMA.containsMouse ? "#15803D" : "#16A34A"
+
+                                                    Text {
+                                                        id: approveTxt
+                                                        anchors.centerIn: parent
+                                                        text: "Approve"
+                                                        font.pixelSize: 12
+                                                        font.weight: Font.Medium
+                                                        color: "white"
+                                                    }
+                                                    MouseArea {
+                                                        id: approveMA
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        enabled: !instructorController.isLoading
+                                                        onClicked: {
+                                                            instructorController.approveInstructor(modelData.id)
+                                                        }
+                                                    }
+                                                }
+
+                                                // Reject button - show for pending/verified
+                                                Rectangle {
+                                                    height: 32
+                                                    width: rejectTxt.implicitWidth + 20
+                                                    radius: 6
+                                                    visible: modelData.instructorStatus !== "rejected"
+                                                    color: rejectMA.containsMouse ? "#B91C1C" : "#DC2626"
+
+                                                    Text {
+                                                        id: rejectTxt
+                                                        anchors.centerIn: parent
+                                                        text: "Reject"
+                                                        font.pixelSize: 12
+                                                        font.weight: Font.Medium
+                                                        color: "white"
+                                                    }
+                                                    MouseArea {
+                                                        id: rejectMA
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        enabled: !instructorController.isLoading
+                                                        onClicked: {
+                                                            instructorController.rejectInstructor(modelData.id)
+                                                        }
+                                                    }
+                                                }
+
+                                                // Revoke button - show only for verified
+                                                Rectangle {
+                                                    height: 32
+                                                    width: revokeTxt.implicitWidth + 20
+                                                    radius: 6
+                                                    visible: modelData.instructorStatus === "verified"
+                                                    color: revokeMA.containsMouse ? "#4B5563" : "#6B7280"
+
+                                                    Text {
+                                                        id: revokeTxt
+                                                        anchors.centerIn: parent
+                                                        text: "Revoke"
+                                                        font.pixelSize: 12
+                                                        font.weight: Font.Medium
+                                                        color: "white"
+                                                    }
+                                                    MouseArea {
+                                                        id: revokeMA
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        enabled: !instructorController.isLoading
+                                                        onClicked: {
+                                                            instructorController.revokeInstructor(modelData.id)
+                                                        }
+                                                    }
+                                                }
+
+                                                Item { Layout.fillWidth: true }
                                             }
                                         }
 
-                                        Button {
-                                            visible: modelData.instructorStatus === "pending"
-                                            text: "Reject"
-                                            flat: false
-                                            Material.background: Material.color(Material.Red)
-                                            Material.foreground: "white"
-                                            onClicked: {
-                                                confirmDialog.instructorId = modelData.id
-                                                confirmDialog.instructorName = modelData.fullName
-                                                confirmDialog.action = "reject"
-                                                confirmDialog.open()
-                                            }
+                                        MouseArea {
+                                            id: rowMA
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            propagateComposedEvents: true
                                         }
-
-                                        // Verified status - show Revoke button
-                                        Button {
-                                            visible: modelData.instructorStatus === "verified"
-                                            text: "Revoke"
-                                            flat: false
-                                            Material.background: Material.color(Material.Orange)
-                                            Material.foreground: "white"
-                                            onClicked: {
-                                                confirmDialog.instructorId = modelData.id
-                                                confirmDialog.instructorName = modelData.fullName
-                                                confirmDialog.action = "revoke"
-                                                confirmDialog.open()
-                                            }
-                                        }
-
-                                        // Rejected status - show Approve button
-                                        Button {
-                                            visible: modelData.instructorStatus === "rejected"
-                                            text: "Approve"
-                                            flat: false
-                                            Material.background: Material.color(Material.Green)
-                                            Material.foreground: "white"
-                                            onClicked: {
-                                                confirmDialog.instructorId = modelData.id
-                                                confirmDialog.instructorName = modelData.fullName
-                                                confirmDialog.action = "approve"
-                                                confirmDialog.open()
-                                            }
-                                        }
-
-                                        Item { Layout.fillWidth: true }
                                     }
-                                }
-
-                                MouseArea {
-                                    id: mouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-
-        // Error Message
-        Label {
-            Layout.fillWidth: true
-            text: instructorController.errorMessage
-            color: Material.color(Material.Red)
-            wrapMode: Text.WordWrap
-            visible: instructorController.errorMessage.length > 0
-        }
-    }
-
-    // Confirmation Dialog (Task 2.4)
-    ConfirmationDialog {
-        id: confirmDialog
-
-        property string instructorId: ""
-        property string instructorName: ""
-        property string action: "approve" // approve, reject, revoke
-
-        title: {
-            if (action === "approve") return "Approve Instructor"
-            if (action === "reject") return "Reject Instructor"
-            if (action === "revoke") return "Revoke Instructor"
-            return ""
-        }
-
-        message: {
-            if (action === "approve") {
-                return "Are you sure you want to approve <b>" + instructorName +
-                       "</b>? They will be able to create courses."
-            }
-            if (action === "reject") {
-                return "Are you sure you want to reject <b>" + instructorName + "</b>?"
-            }
-            if (action === "revoke") {
-                return "Are you sure you want to revoke <b>" + instructorName +
-                       "</b>'s instructor status? They will no longer be able to create courses."
-            }
-            return ""
-        }
-
-        confirmText: action === "approve" ? "Approve" :
-                    action === "reject" ? "Reject" : "Revoke"
-
-        confirmColor: action === "approve" ? Material.Green : Material.Red
-
-        onConfirmed: {
-            if (action === "approve") {
-                instructorController.approveInstructor(instructorId)
-            } else if (action === "reject") {
-                instructorController.rejectInstructor(instructorId)
-            } else if (action === "revoke") {
-                instructorController.revokeInstructor(instructorId)
-            }
-        }
-    }
-
-    // Success Notification
-    ToolTip {
-        id: successNotification
-        timeout: 3000
-
-        function show(message) {
-            text = message
-            x = (parent.width - width) / 2
-            y = parent.height - height - 32
-            open()
-        }
-
-        background: Rectangle {
-            color: Material.color(Material.Green)
-            radius: 4
-        }
-
-        contentItem: Label {
-            text: successNotification.text
-            color: "white"
-            font.pixelSize: 14
-        }
-    }
-
-    // Error Notification
-    ToolTip {
-        id: errorNotification
-        timeout: 4000
-
-        function show(message) {
-            text = message
-            x = (parent.width - width) / 2
-            y = parent.height - height - 32
-            open()
-        }
-
-        background: Rectangle {
-            color: Material.color(Material.Red)
-            radius: 4
-        }
-
-        contentItem: Label {
-            text: errorNotification.text
-            color: "white"
-            font.pixelSize: 14
         }
     }
 }

@@ -53,6 +53,7 @@ public:
 
     Q_INVOKABLE void loadStats();
     Q_INVOKABLE void clearError();
+    Q_INVOKABLE void reloadTokens();
 
 signals:
     void isLoadingChanged();

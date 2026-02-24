@@ -93,6 +93,12 @@ void InstructorController::revokeInstructor(const QString &instructorId)
     m_api->updateInstructorStatus(instructorId, "pending");
 }
 
+void InstructorController::reloadTokens()
+{
+    m_api->loadTokens();
+    qDebug() << "InstructorController: tokens reloaded, logged in:" << m_api->isLoggedIn();
+}
+
 void InstructorController::clearError()
 {
     setError("");
@@ -226,4 +232,3 @@ QString InstructorController::formatRelativeDate(const QString &dateString) cons
         return QString("%1 year%2 ago").arg(years).arg(years > 1 ? "s" : "");
     }
 }
-

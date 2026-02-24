@@ -170,7 +170,7 @@ Rectangle {
             Image {
                 source: "qrc:new/prefix1/first"
                 anchors.fill: parent
-                fillMode: Image.PreserveAspectFit
+                fillMode: Image.PreserveAspectCrop
             }
         }
     }

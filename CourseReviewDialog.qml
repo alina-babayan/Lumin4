@@ -15,7 +15,7 @@ Dialog {
     property string courseTitle: ""
     property bool isProcessing: false
 
-    signal approved()
+    signal courseApproved()
     signal courseRejected()
 
 
@@ -303,7 +303,7 @@ Dialog {
                     try {
                         var response = JSON.parse(xhr.responseText)
                         if (response.success) {
-                            root.approved()
+                            root.courseApproved()
                             root.close()
                         } else {
                             showError(response.message || "Failed to approve course")
@@ -359,7 +359,7 @@ Dialog {
                     try {
                         var response = JSON.parse(xhr.responseText)
                         if (response.success) {
-                            root.rejected()
+                            root.courseRejected()
                             root.close()
                         } else {
                             showError(response.message || "Failed to reject course")

@@ -42,6 +42,7 @@ public:
     Q_INVOKABLE void rejectInstructor(const QString &instructorId);
     Q_INVOKABLE void revokeInstructor(const QString &instructorId);
     Q_INVOKABLE void clearError();
+    Q_INVOKABLE void reloadTokens();
     Q_INVOKABLE void refresh();
 
 signals:

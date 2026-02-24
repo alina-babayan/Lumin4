@@ -23,7 +23,8 @@ HEADERS += \
     transactioncontroller.h \
     usercontroller.h
 
-RESOURCES += qml.qrc
+RESOURCES += qml.qrc \
+    մ.qrc
 
 TARGET = Lumin
 

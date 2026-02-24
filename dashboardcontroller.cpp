@@ -72,6 +72,12 @@ void DashboardController::loadStats()
     m_api->getDashboardStats();
 }
 
+void DashboardController::reloadTokens()
+{
+    m_api->loadTokens();
+    qDebug() << "DashboardController: tokens reloaded, logged in:" << m_api->isLoggedIn();
+}
+
 void DashboardController::clearError()
 {
     setError("");

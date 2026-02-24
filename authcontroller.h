@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QString>
 #include "apimanager.h"
+
 class AuthController : public QObject
 {
     Q_OBJECT
@@ -17,6 +18,7 @@ class AuthController : public QObject
     Q_PROPERTY(QString userEmail READ userEmail NOTIFY userEmailChanged)
     Q_PROPERTY(QString userImage READ userImage NOTIFY userImageChanged)
     Q_PROPERTY(QString userId READ userId NOTIFY userIdChanged)
+    Q_PROPERTY(QString accessToken READ accessToken NOTIFY accessTokenChanged)  // ← new
 
 public:
     explicit AuthController(QObject *parent = nullptr);
@@ -30,6 +32,7 @@ public:
     QString userEmail() const { return m_userEmail; }
     QString userImage() const { return m_userImage; }
     QString userId() const { return m_userId; }
+    QString accessToken() const { return m_api->accessToken(); }  // ← new
 
     Q_INVOKABLE void login(const QString &email, const QString &password);
     Q_INVOKABLE void verifyOtp(const QString &code);
@@ -44,6 +47,7 @@ public:
     Q_INVOKABLE void clearError();
     Q_INVOKABLE void loadProfile();
     Q_INVOKABLE void changePassword(const QString &currentPassword, const QString &newPassword);
+    Q_INVOKABLE void updateProfile(const QString &firstName, const QString &lastName);  // ← new
 
 signals:
     void isLoadingChanged();
@@ -54,6 +58,7 @@ signals:
     void userEmailChanged();
     void userImageChanged();
     void userIdChanged();
+    void accessTokenChanged();   // ← new: emitted after OTP success so all controllers reload tokens
 
     void loginSuccessful();
     void otpVerified();
@@ -61,6 +66,7 @@ signals:
     void passwordResetSent();
     void passwordResetSuccessful();
     void passwordChanged();
+    void profileUpdated();       // ← new
     void loggedOut();
 
 private slots:
@@ -78,6 +84,8 @@ private slots:
     void onResetPasswordFailed(const QString &errorCode, const QString &errorMessage);
     void onProfileLoaded(const QJsonObject &user);
     void onProfileLoadFailed(const QString &errorMessage);
+    void onProfileUpdated(const QJsonObject &user);     // ← new
+    void onProfileUpdateFailed(const QString &errorMessage); // ← new
     void onPasswordChanged();
     void onPasswordChangeFailed(const QString &errorMessage);
     void onRequestStarted();

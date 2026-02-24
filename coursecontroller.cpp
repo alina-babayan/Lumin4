@@ -42,6 +42,15 @@ void CourseController::setError(const QString &error)
     }
 }
 
+void CourseController::reloadTokens()
+{
+    // Re-read the access token from QSettings so this controller's
+    // ApiManager picks up the token saved by AuthController after login.
+    m_api->loadTokens();
+    qDebug() << "CourseController: tokens reloaded, logged in:"
+             << m_api->isLoggedIn();
+}
+
 void CourseController::loadStats()
 {
     clearError();
@@ -62,11 +71,9 @@ void CourseController::onCourseStatsLoaded(const QJsonObject &data)
 {
     qDebug() << "Course stats response:" << data;
 
-    // The API returns the stats directly in the data object
     if (data.contains("stats")) {
         updateStats(data["stats"].toObject());
     } else {
-        // If stats are at the root level of data
         updateStats(data);
     }
 
@@ -94,11 +101,9 @@ void CourseController::updateStats(const QJsonObject &stats)
 {
     qDebug() << "Updating stats with:" << stats;
 
-    // Handle both snake_case (API) and camelCase (if needed)
     m_totalCourses = stats.contains("total") ? stats["total"].toInt() : 0;
     m_draftCourses = stats.contains("draft") ? stats["draft"].toInt() : 0;
 
-    // Handle pending_review (snake_case from API)
     if (stats.contains("pending_review")) {
         m_pendingReviewCourses = stats["pending_review"].toInt();
     } else if (stats.contains("pendingReview")) {
@@ -108,7 +113,7 @@ void CourseController::updateStats(const QJsonObject &stats)
     }
 
     m_publishedCourses = stats.contains("published") ? stats["published"].toInt() : 0;
-    m_rejectedCourses = stats.contains("rejected") ? stats["rejected"].toInt() : 0;
+    m_rejectedCourses  = stats.contains("rejected")  ? stats["rejected"].toInt()  : 0;
 
     qDebug() << "Stats updated - Total:" << m_totalCourses
              << "Draft:" << m_draftCourses

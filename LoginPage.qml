@@ -14,8 +14,9 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
+        // ---- LEFT: Login Form ----
         Rectangle {
-            Layout.fillWidth: true
+            Layout.preferredWidth: parent.width * 0.45
             Layout.fillHeight: true
             color: "white"
 
@@ -112,7 +113,6 @@ Rectangle {
                             font.weight: Font.Medium
                             color: "#333"
                         }
-
                         Rectangle {
                             width: parent.width
                             height: 52
@@ -156,8 +156,7 @@ Rectangle {
                                         source: passwordColumn.passwordHidden
                                                 ? "qrc:/new/prefix1/eye-off.png"
                                                 : "qrc:/new/prefix1/eye.png"
-                                        width: 18
-                                        height: 18
+                                        width: 18; height: 18
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                     }
@@ -243,6 +242,7 @@ Rectangle {
             }
         }
 
+        // ---- RIGHT: Illustration - fills all remaining space with crop ----
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -250,11 +250,11 @@ Rectangle {
             clip: true
 
             Image {
-                source: "qrc:new/prefix1/first"
+                source: "qrc:/new/prefix1/first"
                 anchors.fill: parent
-                fillMode: Image.PreserveAspectFit
+                // FIX: PreserveAspectCrop fills the panel with no gray gaps
+                fillMode: Image.PreserveAspectCrop
             }
         }
     }
 }
-

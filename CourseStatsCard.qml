@@ -9,13 +9,14 @@ Rectangle {
     property string title: ""
     property int value: 0
     property string status: "total"
-    property color cardColor: Material.backgroundColor
-    property color accentColor: Material.accent
+    property color cardColor: Material.color(Material.Blue, Material.Shade50)
+    property color accentColor: Material.color(Material.Blue)
 
     color: "white"
     radius: 12
     border.color: Material.dividerColor
     border.width: 1
+    implicitHeight: 140
 
     scale: mouseArea.containsMouse ? 1.02 : 1.0
     Behavior on scale {
@@ -29,16 +30,18 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
     }
 
-    ColumnLayout {
+    Item {
         anchors.fill: parent
         anchors.margins: 20
-        spacing: 12
 
         Rectangle {
-            Layout.preferredWidth: 48
-            Layout.preferredHeight: 48
+            id: iconCircle
+            width: 48
+            height: 48
             radius: 24
             color: root.cardColor
+            anchors.top: parent.top
+            anchors.left: parent.left
 
             Label {
                 anchors.centerIn: parent
@@ -48,31 +51,36 @@ Rectangle {
         }
 
         Label {
+            id: titleLabel
+            anchors.top: iconCircle.bottom
+            anchors.topMargin: 10
+            anchors.left: parent.left
+            anchors.right: parent.right
             text: root.title
-            font.pixelSize: 14
+            font.pixelSize: 13
             color: Material.hintTextColor
             wrapMode: Text.WordWrap
-            Layout.fillWidth: true
         }
 
         Label {
+            anchors.top: titleLabel.bottom
+            anchors.topMargin: 6
+            anchors.left: parent.left
             text: root.value
-            font.pixelSize: 32
+            font.pixelSize: 30
             font.weight: Font.Bold
             color: root.accentColor
         }
-
-        Item { Layout.fillHeight: true }
     }
 
     function getIcon() {
         switch(status) {
-            case "total": return "📚"
-            case "draft": return "📝"
+            case "total":          return "📚"
+            case "draft":          return "📝"
             case "pending_review": return "⏳"
-            case "published": return "✅"
-            case "rejected": return "❌"
-            default: return "📚"
+            case "published":      return "✅"
+            case "rejected":       return "❌"
+            default:               return "📚"
         }
     }
 

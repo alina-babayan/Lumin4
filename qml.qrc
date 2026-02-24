@@ -30,5 +30,7 @@
         <file>NotificationsPage.qml</file>
         <file>NotificationListItem.qml</file>
         <file>SettingsPage.qml</file>
+        <file>EditCoursePage.qml</file>
+        <file>ReviewCoursePage.qml</file>
     </qresource>
 </RCC>
