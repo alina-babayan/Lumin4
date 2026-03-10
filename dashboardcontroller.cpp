@@ -124,3 +124,4 @@ void DashboardController::onRequestFinished()
 {
     setLoading(false);
 }
+

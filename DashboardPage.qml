@@ -19,27 +19,18 @@ Rectangle {
     property bool loadingActivities: false
 
     property string currentView: "dashboard"
-    property string editCourseId: ""
-    property string reviewCourseId: ""
 
-    // ─── reload tokens on every controller so API calls succeed ────────────────
-    function reloadAllTokens() {
-        if (dashboardController)  dashboardController.reloadTokens()
-        if (courseController)     courseController.reloadTokens()
-        if (instructorController) instructorController.reloadTokens()
+    onCurrentViewChanged: {
+        globalSearchField.text = ""
+        globalSearchField.focus = false
     }
 
     Component.onCompleted: {
-        reloadAllTokens()
-        if (dashboardController) dashboardController.loadStats()
+        if (dashboardController) {
+            dashboardController.loadStats()
+        }
         loadPendingInstructors()
         loadRecentActivities()
-    }
-
-    // Re-reload whenever a fresh login completes
-    Connections {
-        target: authController
-        function onAccessTokenChanged() { reloadAllTokens() }
     }
 
     function loadPendingInstructors() {
@@ -440,6 +431,7 @@ Rectangle {
                     anchors.rightMargin: 24
                     spacing: 16
                     TextField {
+                        id: globalSearchField
                         Layout.preferredWidth: 300
                         Layout.preferredHeight: 38
                         placeholderText: "Search anything..."
@@ -732,9 +724,7 @@ Rectangle {
                               currentView === "users" ? 3 :
                               currentView === "transactions" ? 4 :
                               currentView === "notifications" ? 5 :
-                              currentView === "settings" ? 6 :
-                              currentView === "edit_course" ? 7 :
-                              currentView === "review_course" ? 8 : 0
+                              currentView === "settings" ? 6 : 0
 
             // ========== PAGE 0: DASHBOARD VIEW ==========
             Item {
@@ -1225,24 +1215,6 @@ Rectangle {
                                             color: "#F3F4F6"
                                         }
 
-                                        // Loading spinner for activities
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignHCenter
-                                            visible: loadingActivities
-                                            spacing: 8
-                                            BusyIndicator {
-                                                Layout.alignment: Qt.AlignHCenter
-                                                running: loadingActivities
-                                                width: 36; height: 36
-                                            }
-                                            Text {
-                                                Layout.alignment: Qt.AlignHCenter
-                                                text: "Loading activities..."
-                                                font.pixelSize: 12; color: "#9CA3AF"
-                                            }
-                                        }
-
                                         Item {
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
@@ -1303,41 +1275,6 @@ Rectangle {
 
             // ========== PAGE 6: SETTINGS ==========
             SettingsPage {
-            }
-
-            // ========== PAGE 7: EDIT COURSE ==========
-            EditCoursePage {
-                id: editCoursePage
-                courseId: root.editCourseId
-                onBackRequested: {
-                    root.currentView = "courses"
-                    root.editCourseId = ""
-                }
-                onCourseSaved: {
-                    root.currentView = "courses"
-                    root.editCourseId = ""
-                    if (courseController) courseController.reloadTokens()
-                }
-            }
-
-            // ========== PAGE 8: REVIEW COURSE ==========
-            ReviewCoursePage {
-                id: reviewCoursePage
-                courseId: root.reviewCourseId
-                onBackRequested: {
-                    root.currentView = "courses"
-                    root.reviewCourseId = ""
-                }
-                onCourseApproved: {
-                    root.currentView = "courses"
-                    root.reviewCourseId = ""
-                    if (courseController) { courseController.reloadTokens(); courseController.refresh() }
-                }
-                onCourseRejected: {
-                    root.currentView = "courses"
-                    root.reviewCourseId = ""
-                    if (courseController) { courseController.reloadTokens(); courseController.refresh() }
-                }
             }
             }
         }

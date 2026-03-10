@@ -5,696 +5,348 @@ import QtQuick.Layouts 1.15
 Item {
     id: root
 
+    property var    transactions:   []
+    property bool   isLoading:      false
+    property string searchQuery:    ""
+    property string statusFilter:   ""
+    property int    currentPage:    1
+    property int    totalPages:     1
+    property double totalRevenue:   0.0
+    property double monthlyRevenue: 0.0
+    property int    totalCount:     0
+
     Component.onCompleted: {
-        transactionController.loadTransactions()
+        if (typeof userController !== "undefined") userController.reloadTokens()
+        loadTransactions()
+    }
+
+    Connections {
+        target: authController
+        function onAccessTokenChanged() {
+            if (!authController.accessToken || authController.accessToken === "") return
+            loadTransactions()
+        }
+    }
+
+    function loadTransactions() {
+        isLoading = true
+        var ep = "https://learning-dashboard-rouge.vercel.app/api/transactions"
+        var p = ["page=" + currentPage, "limit=20"]
+        if (statusFilter.length > 0)  p.push("status=" + encodeURIComponent(statusFilter))
+        if (searchQuery.trim().length > 0) p.push("search=" + encodeURIComponent(searchQuery.trim()))
+        ep += "?" + p.join("&")
+
+        var xhr = new XMLHttpRequest()
+        xhr.open("GET", ep)
+        xhr.setRequestHeader("Authorization", "Bearer " + (authController ? authController.accessToken : ""))
+        xhr.setRequestHeader("Accept", "application/json")
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            isLoading = false
+            if (xhr.status === 200) {
+                try {
+                    var r = JSON.parse(xhr.responseText)
+                    if (r.success) {
+                        transactions   = r.data.transactions || []
+                        totalRevenue   = r.data.stats ? (r.data.stats.totalRevenue   || 0) : 0
+                        monthlyRevenue = r.data.stats ? (r.data.stats.monthlyRevenue || 0) : 0
+                        totalCount     = r.data.pagination ? (r.data.pagination.total || 0) : transactions.length
+                        totalPages     = r.data.pagination ? (r.data.pagination.pages || 1) : 1
+                    }
+                } catch(e) { console.log("Transactions parse error:", e) }
+            }
+        }
+        xhr.send()
+    }
+
+    function fmtMoney(val) {
+        var n = parseFloat(val) || 0
+        return "$" + n.toFixed(2)
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return "—"
+        var d = new Date(iso)
+        return Qt.formatDateTime(d, "MMM d, yyyy")
+    }
+
+    function getStatusBg(s) {
+        if (s === "completed") return "#D1FAE5"
+        if (s === "pending")   return "#FEF9C3"
+        if (s === "failed")    return "#FEE2E2"
+        if (s === "refunded")  return "#EEF2FF"
+        return "#F3F4F6"
+    }
+    function getStatusFg(s) {
+        if (s === "completed") return "#065F46"
+        if (s === "pending")   return "#92400E"
+        if (s === "failed")    return "#DC2626"
+        if (s === "refunded")  return "#4F46E5"
+        return "#6B7280"
+    }
+    function getStatusLabel(s) {
+        if (!s) return "—"
+        return s.charAt(0).toUpperCase() + s.slice(1)
     }
 
     Rectangle {
         anchors.fill: parent
-        color: "#FAFAFA"
+        color: "#FFFFFF"
 
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 32
-            spacing: 24
+            spacing: 20
 
             // Header
-            RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    text: "Transactions"
-                    font.pixelSize: 24
-                    font.weight: Font.DemiBold
-                    color: "#18181B"
-                }
-
-                Item { Layout.fillWidth: true }
-
-                Rectangle {
-                    height: 36
-                    width: refreshText.implicitWidth + 24
-                    radius: 6
-                    color: refreshMA.containsMouse ? "#F3F4F6" : "white"
-                    border.color: "#E5E7EB"
-                    border.width: 1
-
-                    Text {
-                        id: refreshText
-                        anchors.centerIn: parent
-                        text: "↻ Refresh"
-                        font.pixelSize: 13
-                        color: "#6B7280"
-                    }
-
-                    MouseArea {
-                        id: refreshMA
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: transactionController.refresh()
-                    }
-                }
+            Column {
+                spacing: 4
+                Text { text: "Transactions"; font.pixelSize: 22; font.weight: Font.Bold; color: "#18181B" }
+                Text { text: "View and manage your transaction history"; font.pixelSize: 13; color: "#6B7280" }
             }
 
-            // Summary Cards
+            // Stat cards
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 16
+                spacing: 14
 
                 Repeater {
                     model: [
-                        { title: "Total Revenue", icon: "💰", bg: "#DCFCE7", val: transactionController.formattedTotalRevenue },
-                        { title: "This Month", icon: "📊", bg: "#EEF2FF", val: transactionController.formattedThisMonthRevenue },
-                        { title: "Total Transactions", icon: "📝", bg: "#FCE7F3", val: transactionController.totalTransactions.toString() }
+                        { icon: "💵", label: "Total Revenue",     val: fmtMoney(totalRevenue),   sub: "Earn last time" },
+                        { icon: "📅", label: "This Month",        val: fmtMoney(monthlyRevenue), sub: "Current month earnings" },
+                        { icon: "🔢", label: "Total Transactions", val: totalCount.toString(),   sub: "All transactions" }
                     ]
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 120
-                        radius: 10
-                        color: "white"
-                        border.color: "#E5E7EB"
-                        border.width: 1
+                    delegate: Rectangle {
+                        Layout.fillWidth: true; height: 96
+                        radius: 10; color: "white"
+                        border.color: "#E5E7EB"; border.width: 1
 
                         ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 18
-                            spacing: 8
-
+                            anchors.fill: parent; anchors.margins: 16; spacing: 4
                             RowLayout {
-                                Layout.fillWidth: true
-
-                                Rectangle {
-                                    width: 36
-                                    height: 36
-                                    radius: 8
-                                    color: modelData.bg
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData.icon
-                                        font.pixelSize: 18
-                                    }
-                                }
-
-                                Item { Layout.fillWidth: true }
+                                spacing: 6
+                                Text { text: modelData.icon; font.pixelSize: 15 }
+                                Text { text: modelData.label; font.pixelSize: 12; color: "#6B7280" }
                             }
-
-                            Text {
-                                text: modelData.title
-                                font.pixelSize: 12
-                                color: "#6B7280"
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                text: modelData.val
-                                font.pixelSize: 28
-                                font.weight: Font.Bold
-                                color: "#18181B"
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
-                                wrapMode: Text.NoWrap
-                            }
+                            Text { text: modelData.val; font.pixelSize: 24; font.weight: Font.Bold; color: "#18181B" }
+                            Text { text: modelData.sub; font.pixelSize: 11; color: "#9CA3AF" }
                         }
                     }
                 }
             }
 
-            // Filter Section
+            // Transaction History card
             Rectangle {
-                Layout.fillWidth: true
-                height: filterRow.implicitHeight + 24
-                radius: 10
-                color: "white"
-                border.color: "#E5E7EB"
-                border.width: 1
-
-                RowLayout {
-                    id: filterRow
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 12
-
-                    // Search Bar
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 40
-                        radius: 6
-                        color: "white"
-                        border.color: "#E5E7EB"
-                        border.width: 1
-
-                        TextInput {
-                            id: searchInput
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            verticalAlignment: TextInput.AlignVCenter
-                            font.pixelSize: 13
-                            color: "#18181B"
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "🔍 Search by order number, student, or course..."
-                                font.pixelSize: 13
-                                color: "#9CA3AF"
-                                visible: searchInput.text.length === 0
-                            }
-
-                            onTextChanged: searchTimer.restart()
-
-                            Timer {
-                                id: searchTimer
-                                interval: 500
-                                onTriggered: transactionController.setSearchQuery(searchInput.text)
-                            }
-                        }
-                    }
-
-                    // Status Filter
-                    Rectangle {
-                        Layout.preferredWidth: 140
-                        height: 40
-                        radius: 6
-                        color: "white"
-                        border.color: "#E5E7EB"
-                        border.width: 1
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            spacing: 8
-
-                            Text {
-                                text: statusCombo.currentText
-                                font.pixelSize: 13
-                                color: "#18181B"
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 10
-                                color: "#6B7280"
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: statusMenu.open()
-                        }
-
-                        Menu {
-                            id: statusMenu
-                            y: parent.height
-
-                            MenuItem {
-                                text: "All"
-                                onTriggered: {
-                                    statusCombo.currentText = "All"
-                                    transactionController.setStatusFilter("all")
-                                }
-                            }
-                            MenuItem {
-                                text: "Completed"
-                                onTriggered: {
-                                    statusCombo.currentText = "Completed"
-                                    transactionController.setStatusFilter("completed")
-                                }
-                            }
-                            MenuItem {
-                                text: "Failed"
-                                onTriggered: {
-                                    statusCombo.currentText = "Failed"
-                                    transactionController.setStatusFilter("failed")
-                                }
-                            }
-                            MenuItem {
-                                text: "Refunded"
-                                onTriggered: {
-                                    statusCombo.currentText = "Refunded"
-                                    transactionController.setStatusFilter("refunded")
-                                }
-                            }
-                        }
-
-                        QtObject {
-                            id: statusCombo
-                            property string currentText: "All"
-                        }
-                    }
-
-                    Rectangle {
-                        height: 40
-                        width: clearText.implicitWidth + 24
-                        radius: 6
-                        color: clearMA.containsMouse ? "#F3F4F6" : "white"
-                        border.color: "#E5E7EB"
-                        border.width: 1
-                        visible: searchInput.text.length > 0
-
-                        Text {
-                            id: clearText
-                            anchors.centerIn: parent
-                            text: "Clear"
-                            font.pixelSize: 13
-                            color: "#6B7280"
-                        }
-
-                        MouseArea {
-                            id: clearMA
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                searchInput.text = ""
-                                transactionController.setSearchQuery("")
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Transactions Table
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 10
-                color: "white"
-                border.color: "#E5E7EB"
-                border.width: 1
+                Layout.fillWidth: true; Layout.fillHeight: true
+                radius: 10; color: "white"
+                border.color: "#E5E7EB"; border.width: 1; clip: true
 
                 ColumnLayout {
-                    anchors.fill: parent
-                    spacing: 0
+                    anchors.fill: parent; anchors.margins: 20; spacing: 14
 
-                    // Table Header
-                    Rectangle {
+                    // Card header
+                    RowLayout {
                         Layout.fillWidth: true
-                        height: 48
-                        color: "#F9FAFB"
+                        Column {
+                            spacing: 2
+                            Text { text: "Transaction History"; font.pixelSize: 15; font.weight: Font.DemiBold; color: "#18181B" }
+                            Text { text: "View all your transactions details and earnings"; font.pixelSize: 12; color: "#9CA3AF" }
+                        }
+                        Item { Layout.fillWidth: true }
 
+                        // Export button
                         Rectangle {
-                            anchors.bottom: parent.bottom
-                            width: parent.width
-                            height: 1
-                            color: "#E5E7EB"
+                            height: 34; width: expTxt.implicitWidth + 28; radius: 8
+                            color: expHov.containsMouse ? "#F3F4F6" : "white"
+                            border.color: "#E5E7EB"; border.width: 1
+                            RowLayout {
+                                anchors.centerIn: parent; spacing: 6
+                                Text { text: "↑"; font.pixelSize: 13; color: "#374151" }
+                                Text { id: expTxt; text: "Export"; font.pixelSize: 13; color: "#374151" }
+                            }
+                            MouseArea { id: expHov; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
+                        }
+                    }
+
+                    // Search + status filter bar
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 10
+
+                        // Search
+                        Rectangle {
+                            Layout.fillWidth: true; height: 38; radius: 8
+                            color: "#F9FAFB"; border.color: "#E5E7EB"; border.width: 1
+                            RowLayout {
+                                anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10; spacing: 6
+                                Text { text: "🔍"; font.pixelSize: 12; color: "#9CA3AF" }
+                                TextField {
+                                    id: txSearchField
+                                    Layout.fillWidth: true
+                                    placeholderText: "Search by order number, content, or course..."
+                                    font.pixelSize: 12; color: "#18181B"; background: null
+                                    onTextChanged: txSearchTimer.restart()
+                                    Timer { id: txSearchTimer; interval: 500
+                                        onTriggered: { root.searchQuery = txSearchField.text.trim(); root.currentPage = 1; root.loadTransactions() } }
+                                }
+                            }
                         }
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 24
-                            anchors.rightMargin: 24
-                            spacing: 12
+                        // Status filter
+                        Rectangle {
+                            height: 38; width: stFilterRow.implicitWidth + 20; radius: 8
+                            color: "white"; border.color: "#E5E7EB"; border.width: 1
 
-                            Text {
-                                Layout.preferredWidth: 140
-                                text: "Order"
-                                font.pixelSize: 12
-                                font.weight: Font.Medium
-                                color: "#6B7280"
-                            }
+                            RowLayout {
+                                id: stFilterRow
+                                anchors.centerIn: parent; spacing: 4
 
-                            Text {
-                                Layout.preferredWidth: 180
-                                text: "Student"
-                                font.pixelSize: 12
-                                font.weight: Font.Medium
-                                color: "#6B7280"
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: "Course(s)"
-                                font.pixelSize: 12
-                                font.weight: Font.Medium
-                                color: "#6B7280"
-                            }
-
-                            Text {
-                                Layout.preferredWidth: 100
-                                text: "Amount"
-                                font.pixelSize: 12
-                                font.weight: Font.Medium
-                                color: "#6B7280"
-                            }
-
-                            Text {
-                                Layout.preferredWidth: 100
-                                text: "Status"
-                                font.pixelSize: 12
-                                font.weight: Font.Medium
-                                color: "#6B7280"
-                            }
-
-                            Text {
-                                Layout.preferredWidth: 140
-                                text: "Date"
-                                font.pixelSize: 12
-                                font.weight: Font.Medium
-                                color: "#6B7280"
+                                Repeater {
+                                    model: [
+                                        { label: "All Status", val: "" },
+                                        { label: "Completed",  val: "completed" },
+                                        { label: "Pending",    val: "pending" },
+                                        { label: "Failed",     val: "failed" }
+                                    ]
+                                    delegate: Rectangle {
+                                        height: 26; width: sfLbl.implicitWidth + 16; radius: 5
+                                        color: root.statusFilter === modelData.val ? "#18181B" : (sfMA.containsMouse ? "#F3F4F6" : "transparent")
+                                        Text { id: sfLbl; anchors.centerIn: parent; text: modelData.label; font.pixelSize: 11
+                                            color: root.statusFilter === modelData.val ? "white" : "#6B7280" }
+                                        MouseArea { id: sfMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onClicked: { root.statusFilter = modelData.val; root.currentPage = 1; root.loadTransactions() } }
+                                    }
+                                }
                             }
                         }
                     }
 
-                    // Table Content
+                    // Loading
                     Item {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        visible: isLoading
+                        ColumnLayout { anchors.centerIn: parent; spacing: 12
+                            BusyIndicator { Layout.alignment: Qt.AlignHCenter; running: true; width: 36; height: 36 }
+                            Text { text: "Loading transactions…"; font.pixelSize: 13; color: "#9CA3AF"; Layout.alignment: Qt.AlignHCenter }
+                        }
+                    }
 
-                        // Loading State
+                    // Empty state
+                    Item {
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        visible: !isLoading && transactions.length === 0
+
                         ColumnLayout {
-                            anchors.centerIn: parent
-                            spacing: 16
-                            visible: transactionController.isLoading
-
-                            Text {
+                            anchors.centerIn: parent; spacing: 12
+                            Rectangle {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: "⏳"
-                                font.pixelSize: 48
+                                width: 64; height: 64; radius: 32; color: "#F9FAFB"
+                                border.color: "#E5E7EB"; border.width: 1
+                                Text { anchors.centerIn: parent; text: "$"; font.pixelSize: 28; color: "#D1D5DB" }
                             }
+                            Text { text: "No Transactions Yet"; font.pixelSize: 16; font.weight: Font.Medium; color: "#18181B"; Layout.alignment: Qt.AlignHCenter }
+                            Text { text: "Transactions will appear here once students purchase courses"; font.pixelSize: 13; color: "#9CA3AF"; Layout.alignment: Qt.AlignHCenter }
+                        }
+                    }
 
-                            Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text: "Loading transactions..."
-                                font.pixelSize: 13
-                                color: "#9CA3AF"
+                    // Table header + rows
+                    ColumnLayout {
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        spacing: 0
+                        visible: !isLoading && transactions.length > 0
+
+                        // Header
+                        Rectangle {
+                            Layout.fillWidth: true; height: 40; color: "#F9FAFB"
+                            border.color: "#E5E7EB"; border.width: 1; radius: 6
+                            RowLayout {
+                                anchors.fill: parent; anchors.leftMargin: 16; anchors.rightMargin: 16; spacing: 0
+                                Text { text: "Transaction";  Layout.preferredWidth: 200; font.pixelSize: 11; font.weight: Font.Medium; color: "#6B7280" }
+                                Text { text: "Student";      Layout.preferredWidth: 160; font.pixelSize: 11; font.weight: Font.Medium; color: "#6B7280" }
+                                Text { text: "Amount";       Layout.preferredWidth: 100; font.pixelSize: 11; font.weight: Font.Medium; color: "#6B7280" }
+                                Text { text: "Status";       Layout.preferredWidth: 100; font.pixelSize: 11; font.weight: Font.Medium; color: "#6B7280" }
+                                Text { text: "Date";         Layout.fillWidth: true;     font.pixelSize: 11; font.weight: Font.Medium; color: "#6B7280" }
                             }
                         }
 
-                        // Empty State
-                        ColumnLayout {
-                            anchors.centerIn: parent
-                            spacing: 12
-                            visible: !transactionController.isLoading && transactionController.transactions.length === 0
+                        ListView {
+                            Layout.fillWidth: true; Layout.fillHeight: true
+                            model: transactions; clip: true
+                            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-                            Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text: "💳"
-                                font.pixelSize: 48
-                            }
+                            delegate: Rectangle {
+                                width: ListView.view.width; height: 60
+                                color: txRowHov.containsMouse ? "#FAFAFA" : "white"
+                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#F3F4F6" }
 
-                            Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text: "No transactions found"
-                                font.pixelSize: 15
-                                font.weight: Font.Medium
-                                color: "#18181B"
-                            }
+                                RowLayout {
+                                    anchors.fill: parent; anchors.leftMargin: 16; anchors.rightMargin: 16; spacing: 0
 
-                            Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text: "Try adjusting your filters or search query"
-                                font.pixelSize: 13
-                                color: "#9CA3AF"
-                            }
-                        }
+                                    // Transaction ID + course
+                                    Column {
+                                        Layout.preferredWidth: 200; spacing: 2; Layout.alignment: Qt.AlignVCenter
+                                        Text { text: "#" + (modelData.orderNumber || modelData.id || "—"); font.pixelSize: 13; font.weight: Font.Medium; color: "#18181B"; elide: Text.ElideRight; width: parent.width }
+                                        Text { text: modelData.courseName || modelData.course || "—"; font.pixelSize: 11; color: "#9CA3AF"; elide: Text.ElideRight; width: parent.width }
+                                    }
 
-                        // Transactions List
-                        ScrollView {
-                            anchors.fill: parent
-                            visible: !transactionController.isLoading && transactionController.transactions.length > 0
-                            clip: true
+                                    // Student
+                                    Column {
+                                        Layout.preferredWidth: 160; spacing: 2; Layout.alignment: Qt.AlignVCenter
+                                        Text { text: modelData.studentName || modelData.student || "—"; font.pixelSize: 13; color: "#374151"; elide: Text.ElideRight; width: parent.width }
+                                        Text { text: modelData.studentEmail || ""; font.pixelSize: 11; color: "#9CA3AF"; elide: Text.ElideRight; width: parent.width }
+                                    }
 
-                            ColumnLayout {
-                                width: parent.parent.width
-                                spacing: 0
+                                    // Amount
+                                    Text {
+                                        Layout.preferredWidth: 100; Layout.alignment: Qt.AlignVCenter
+                                        text: fmtMoney(modelData.amount || 0)
+                                        font.pixelSize: 13; font.weight: Font.Medium; color: "#18181B"
+                                    }
 
-                                Repeater {
-                                    model: transactionController.transactions
-
-                                    Rectangle {
-                                        Layout.fillWidth: true
-                                        height: 80
-                                        color: rowMA.containsMouse ? "#F9FAFB" : "transparent"
-
+                                    // Status badge
+                                    Item {
+                                        Layout.preferredWidth: 100; Layout.alignment: Qt.AlignVCenter
                                         Rectangle {
-                                            anchors.bottom: parent.bottom
-                                            width: parent.width
-                                            height: 1
-                                            color: "#F3F4F6"
-                                        }
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 24
-                                            anchors.rightMargin: 24
-                                            spacing: 12
-
-                                            // Order Info
-                                            ColumnLayout {
-                                                Layout.preferredWidth: 140
-                                                spacing: 2
-
-                                                Text {
-                                                    text: modelData.orderNumber || "N/A"
-                                                    font.pixelSize: 13
-                                                    font.weight: Font.Medium
-                                                    color: "#18181B"
-                                                }
-
-                                                Text {
-                                                    text: modelData.paymentMethodDisplay || ""
-                                                    font.pixelSize: 11
-                                                    color: "#6B7280"
-                                                }
-                                            }
-
-                                            // Student Info
-                                            RowLayout {
-                                                Layout.preferredWidth: 180
-                                                spacing: 10
-
-                                                Rectangle {
-                                                    width: 36
-                                                    height: 36
-                                                    radius: 18
-                                                    color: "#EEF2FF"
-
-                                                    Text {
-                                                        anchors.centerIn: parent
-                                                        text: modelData.studentName ? modelData.studentName.charAt(0).toUpperCase() : "S"
-                                                        font.pixelSize: 14
-                                                        font.weight: Font.Medium
-                                                        color: "#6366F1"
-                                                    }
-                                                }
-
-                                                ColumnLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 2
-
-                                                    Text {
-                                                        text: modelData.studentName || "Unknown"
-                                                        font.pixelSize: 12
-                                                        font.weight: Font.Medium
-                                                        color: "#18181B"
-                                                        elide: Text.ElideRight
-                                                        Layout.fillWidth: true
-                                                    }
-
-                                                    Text {
-                                                        text: modelData.studentEmail || ""
-                                                        font.pixelSize: 11
-                                                        color: "#6B7280"
-                                                        elide: Text.ElideRight
-                                                        Layout.fillWidth: true
-                                                    }
-                                                }
-                                            }
-
-                                            // Courses
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 3
-
-                                                Repeater {
-                                                    model: modelData.courses || []
-
-                                                    RowLayout {
-                                                        spacing: 6
-
-                                                        Text {
-                                                            text: "•"
-                                                            color: "#6366F1"
-                                                            font.pixelSize: 12
-                                                        }
-
-                                                        Text {
-                                                            text: modelData.title || ""
-                                                            font.pixelSize: 12
-                                                            color: "#18181B"
-                                                            Layout.fillWidth: true
-                                                            elide: Text.ElideRight
-                                                        }
-
-                                                        Text {
-                                                            text: modelData.formattedPrice || ""
-                                                            font.pixelSize: 11
-                                                            color: "#6B7280"
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            // Amount
-                                            Text {
-                                                Layout.preferredWidth: 100
-                                                text: modelData.formattedAmount || "$0.00"
-                                                font.pixelSize: 15
-                                                font.weight: Font.Bold
-                                                color: "#16A34A"
-                                                horizontalAlignment: Text.AlignRight
-                                            }
-
-                                            // Status Badge
-                                            Rectangle {
-                                                Layout.preferredWidth: 100
-                                                height: 24
-                                                radius: 12
-                                                color: {
-                                                    if (modelData.status === "completed") return "#DCFCE7"
-                                                    if (modelData.status === "failed") return "#FEE2E2"
-                                                    if (modelData.status === "refunded") return "#F3F4F6"
-                                                    return "#F3F4F6"
-                                                }
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: modelData.statusText || "Unknown"
-                                                    font.pixelSize: 11
-                                                    font.weight: Font.Medium
-                                                    color: {
-                                                        if (modelData.status === "completed") return "#16A34A"
-                                                        if (modelData.status === "failed") return "#DC2626"
-                                                        if (modelData.status === "refunded") return "#6B7280"
-                                                        return "#6B7280"
-                                                    }
-                                                }
-                                            }
-
-                                            // Date
-                                            ColumnLayout {
-                                                Layout.preferredWidth: 140
-                                                spacing: 2
-
-                                                Text {
-                                                    text: modelData.formattedDate || "Unknown"
-                                                    font.pixelSize: 12
-                                                    color: "#18181B"
-                                                }
-
-                                                Text {
-                                                    text: modelData.relativeTime || ""
-                                                    font.pixelSize: 11
-                                                    color: "#6B7280"
-                                                }
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: rowMA
-                                            anchors.fill: parent
-                                            hoverEnabled: true
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: txStLbl.implicitWidth + 16; height: 22; radius: 11
+                                            color: getStatusBg(modelData.status)
+                                            Text { id: txStLbl; anchors.centerIn: parent; text: getStatusLabel(modelData.status); font.pixelSize: 11; font.weight: Font.Medium; color: getStatusFg(modelData.status) }
                                         }
                                     }
+
+                                    // Date
+                                    Text {
+                                        Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
+                                        text: fmtDate(modelData.createdAt)
+                                        font.pixelSize: 12; color: "#6B7280"
+                                    }
                                 }
+
+                                MouseArea { id: txRowHov; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                             }
                         }
                     }
 
                     // Pagination
-                    Rectangle {
+                    RowLayout {
                         Layout.fillWidth: true
-                        height: 56
-                        color: "#F9FAFB"
-                        visible: transactionController.totalPages > 1
-
+                        visible: !isLoading && transactions.length > 0 && totalPages > 1
+                        Item { Layout.fillWidth: true }
+                        Text { text: "Page " + currentPage + " of " + totalPages; font.pixelSize: 12; color: "#9CA3AF" }
                         Rectangle {
-                            anchors.top: parent.top
-                            width: parent.width
-                            height: 1
-                            color: "#E5E7EB"
+                            width: 28; height: 28; radius: 6
+                            color: currentPage > 1 && pgPH.containsMouse ? "#F3F4F6" : "white"
+                            border.color: "#E5E7EB"; border.width: 1
+                            Text { anchors.centerIn: parent; text: "←"; font.pixelSize: 13; color: currentPage > 1 ? "#374151" : "#D1D5DB" }
+                            MouseArea { id: pgPH; anchors.fill: parent; hoverEnabled: true; enabled: currentPage > 1; cursorShape: Qt.PointingHandCursor
+                                onClicked: { currentPage--; loadTransactions() } }
                         }
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 24
-                            anchors.rightMargin: 24
-                            spacing: 12
-
-                            Text {
-                                text: "Page " + transactionController.currentPage +
-                                      " of " + transactionController.totalPages
-                                font.pixelSize: 13
-                                color: "#6B7280"
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            Rectangle {
-                                height: 36
-                                width: prevText.implicitWidth + 24
-                                radius: 6
-                                color: {
-                                    if (transactionController.currentPage <= 1) return "#F3F4F6"
-                                    if (prevMA.containsMouse) return "#EEF2FF"
-                                    return "white"
-                                }
-                                border.color: "#E5E7EB"
-                                border.width: 1
-
-                                Text {
-                                    id: prevText
-                                    anchors.centerIn: parent
-                                    text: "← Previous"
-                                    font.pixelSize: 13
-                                    color: transactionController.currentPage > 1 ? "#6366F1" : "#9CA3AF"
-                                }
-
-                                MouseArea {
-                                    id: prevMA
-                                    anchors.fill: parent
-                                    enabled: transactionController.currentPage > 1
-                                    hoverEnabled: true
-                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    onClicked: transactionController.previousPage()
-                                }
-                            }
-
-                            Rectangle {
-                                height: 36
-                                width: nextText.implicitWidth + 24
-                                radius: 6
-                                color: {
-                                    if (transactionController.currentPage >= transactionController.totalPages) return "#F3F4F6"
-                                    if (nextMA.containsMouse) return "#EEF2FF"
-                                    return "white"
-                                }
-                                border.color: "#E5E7EB"
-                                border.width: 1
-
-                                Text {
-                                    id: nextText
-                                    anchors.centerIn: parent
-                                    text: "Next →"
-                                    font.pixelSize: 13
-                                    color: transactionController.currentPage < transactionController.totalPages ? "#6366F1" : "#9CA3AF"
-                                }
-
-                                MouseArea {
-                                    id: nextMA
-                                    anchors.fill: parent
-                                    enabled: transactionController.currentPage < transactionController.totalPages
-                                    hoverEnabled: true
-                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    onClicked: transactionController.nextPage()
-                                }
-                            }
+                        Rectangle {
+                            width: 28; height: 28; radius: 6
+                            color: currentPage < totalPages && pgNH.containsMouse ? "#F3F4F6" : "white"
+                            border.color: "#E5E7EB"; border.width: 1
+                            Text { anchors.centerIn: parent; text: "→"; font.pixelSize: 13; color: currentPage < totalPages ? "#374151" : "#D1D5DB" }
+                            MouseArea { id: pgNH; anchors.fill: parent; hoverEnabled: true; enabled: currentPage < totalPages; cursorShape: Qt.PointingHandCursor
+                                onClicked: { currentPage++; loadTransactions() } }
                         }
                     }
                 }

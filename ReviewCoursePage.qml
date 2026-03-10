@@ -260,7 +260,11 @@ Item {
                                                     Rectangle { Layout.fillWidth: true; height: 38; color: "transparent"
                                                         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#F9FAFB" }
                                                         RowLayout { anchors.fill: parent; anchors.leftMargin: 28; anchors.rightMargin: 12; spacing: 10
-                                                            Text { text: { var t = modelData.type || "video"; return t==="video"?"▶":t==="quiz"?"❓":"📄" } font.pixelSize: 12; color: "#6B7280" }
+                                                            Text {
+                                                                text: modelData.type === "quiz" ? "❓" : modelData.type === "article" ? "📄" : "▶"
+                                                                font.pixelSize: 12
+                                                                color: "#6B7280"
+                                                            }
                                                             Text { text: modelData.title || ("Lesson "+(index+1)); font.pixelSize: 13; color: "#374151"; Layout.fillWidth: true; elide: Text.ElideRight }
                                                             Text { text: modelData.duration || ""; font.pixelSize: 12; color: "#9CA3AF" } } }
                                                 }

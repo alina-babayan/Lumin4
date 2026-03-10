@@ -196,7 +196,9 @@ Rectangle {
                         text: (authController && authController.isLoading) ? "Logging in..." : "Login"
                         width: parent.width
                         height: 52
-                        enabled: !authController || !authController.isLoading
+                        enabled: (!authController || !authController.isLoading)
+                                 && emailField.text.trim().length > 0
+                                 && passwordField.text.length > 0
                         background: Rectangle {
                             radius: 8
                             color: parent.enabled ? (parent.pressed ? "#0f0f0f" : (parent.hovered ? "#2a2a2a" : "#1a1a1a")) : "#e5e7eb"

@@ -6,7 +6,18 @@ Item {
     id: root
 
     Component.onCompleted: {
+        userController.reloadTokens()
         userController.loadStudents()
+    }
+
+    // Re-fetch students whenever a fresh token arrives (e.g. right after login)
+    Connections {
+        target: authController
+        function onAccessTokenChanged() {
+            if (!authController.accessToken || authController.accessToken === "") return
+            userController.reloadTokens()
+            userController.loadStudents()
+        }
     }
 
     Rectangle {
@@ -29,32 +40,6 @@ Item {
                     color: "#18181B"
                 }
 
-                Item { Layout.fillWidth: true }
-
-                Rectangle {
-                    height: 36
-                    width: refreshText.implicitWidth + 24
-                    radius: 6
-                    color: refreshMA.containsMouse ? "#F3F4F6" : "white"
-                    border.color: "#E5E7EB"
-                    border.width: 1
-
-                    Text {
-                        id: refreshText
-                        anchors.centerIn: parent
-                        text: "↻ Refresh"
-                        font.pixelSize: 13
-                        color: "#6B7280"
-                    }
-
-                    MouseArea {
-                        id: refreshMA
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: userController.refresh()
-                    }
-                }
             }
 
             // Stats Cards
@@ -326,10 +311,11 @@ Item {
                             spacing: 16
                             visible: userController.isLoading
 
-                            Text {
+                            BusyIndicator {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: "⏳"
-                                font.pixelSize: 48
+                                running: userController.isLoading
+                                width: 40
+                                height: 40
                             }
 
                             Text {
@@ -605,68 +591,37 @@ Item {
                 columnSpacing: 16
                 rowSpacing: 16
 
-                Text {
-                    text: "Full Name:"
-                    font.pixelSize: 13
-                    color: "#6B7280"
-                }
+                Text { text: "Full Name:"; font.pixelSize: 13; color: "#6B7280" }
                 Text {
                     text: userDetailsDialog.student.fullName || "Unknown"
-                    font.pixelSize: 13
-                    color: "#18181B"
-                    Layout.fillWidth: true
+                    font.pixelSize: 13; color: "#18181B"; Layout.fillWidth: true
                 }
 
-                Text {
-                    text: "Email:"
-                    font.pixelSize: 13
-                    color: "#6B7280"
-                }
+                Text { text: "Email:"; font.pixelSize: 13; color: "#6B7280" }
                 Text {
                     text: userDetailsDialog.student.email || "N/A"
-                    font.pixelSize: 13
-                    color: "#18181B"
-                    Layout.fillWidth: true
+                    font.pixelSize: 13; color: "#18181B"; Layout.fillWidth: true
                 }
 
-                Text {
-                    text: "Student ID:"
-                    font.pixelSize: 13
-                    color: "#6B7280"
-                }
+                Text { text: "Student ID:"; font.pixelSize: 13; color: "#6B7280" }
                 Text {
                     text: userDetailsDialog.student.id || "N/A"
-                    font.pixelSize: 13
-                    color: "#18181B"
-                    Layout.fillWidth: true
-                    elide: Text.ElideRight
+                    font.pixelSize: 13; color: "#18181B"; Layout.fillWidth: true; elide: Text.ElideRight
                 }
 
-                Text {
-                    text: "Status:"
-                    font.pixelSize: 13
-                    color: "#6B7280"
-                }
+                Text { text: "Status:"; font.pixelSize: 13; color: "#6B7280" }
                 Rectangle {
-                    width: 80
-                    height: 24
-                    radius: 12
+                    width: 80; height: 24; radius: 12
                     color: userDetailsDialog.student.isActive ? "#DCFCE7" : "#F3F4F6"
-
                     Text {
                         anchors.centerIn: parent
                         text: userDetailsDialog.student.statusText || "Inactive"
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
+                        font.pixelSize: 12; font.weight: Font.Medium
                         color: userDetailsDialog.student.isActive ? "#16A34A" : "#6B7280"
                     }
                 }
 
-                Text {
-                    text: "Join Date:"
-                    font.pixelSize: 13
-                    color: "#6B7280"
-                }
+                Text { text: "Join Date:"; font.pixelSize: 13; color: "#6B7280" }
                 Text {
                     text: {
                         if (userDetailsDialog.student.createdAt) {
@@ -675,19 +630,13 @@ Item {
                         }
                         return "Unknown"
                     }
-                    font.pixelSize: 13
-                    color: "#18181B"
-                    Layout.fillWidth: true
+                    font.pixelSize: 13; color: "#18181B"; Layout.fillWidth: true
                 }
             }
 
             Item { Layout.fillHeight: true }
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: "#E5E7EB"
-            }
+            Rectangle { Layout.fillWidth: true; height: 1; color: "#E5E7EB" }
 
             // Close Button
             Rectangle {
@@ -715,5 +664,3 @@ Item {
         }
     }
 }
-
-

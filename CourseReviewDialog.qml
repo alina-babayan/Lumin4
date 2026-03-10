@@ -1,421 +1,295 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
-Dialog {
+// Pure-QML dialog — no Material imports, no mixed styling
+Popup {
     id: root
     modal: true
-    title: "Review Course"
     anchors.centerIn: parent
-    width: 500
-    closePolicy: Dialog.CloseOnEscape
+    width: 520
+    padding: 0
+    closePolicy: Popup.CloseOnEscape
 
-    property string courseId: ""
+    property string courseId:    ""
     property string courseTitle: ""
-    property bool isProcessing: false
+    property bool   isProcessing: false
 
     signal courseApproved()
     signal courseRejected()
 
-
-    header: ToolBar {
-        Material.background: Material.primary
-        Material.foreground: "white"
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 16
-            anchors.rightMargin: 16
-            spacing: 16
-
-            Label {
-                text: "📋"
-                font.pixelSize: 24
-            }
-
-            Label {
-                text: root.title
-                font.pixelSize: 18
-                font.weight: Font.Medium
-                Layout.fillWidth: true
-            }
-
-            ToolButton {
-                text: "✕"
-                font.pixelSize: 18
-                onClicked: root.close()
-            }
-        }
+    // Reset state each time it opens
+    onOpened: {
+        approveRadio.checked = true
+        rejectReasonInput.text = ""
+        errorMsg.visible = false
+        isProcessing = false
     }
 
-    ColumnLayout {
-        width: parent.width
-        spacing: 24
+    // ── Background card ───────────────────────────────────────────────────────
+    background: Rectangle {
+        radius: 12; color: "white"
+        layer.enabled: true
+        layer.effect: null  // shadow-free, clean
+        border.color: "#E5E7EB"; border.width: 1
+    }
 
-        // Course Info
+    contentItem: ColumnLayout {
+        spacing: 0
+
+        // ── Header bar ────────────────────────────────────────────────────────
         Rectangle {
-            Layout.fillWidth: true
-            height: courseInfoLayout.height + 32
-            radius: 8
-            color: Material.color(Material.Grey, Material.Shade100)
+            Layout.fillWidth: true; height: 56
+            color: "#3B4BC8"; radius: 12  // blue-indigo header like screenshot
 
+            // round only top corners
+            Rectangle { width: parent.width; height: parent.height / 2; anchors.bottom: parent.bottom; color: "#3B4BC8" }
+
+            RowLayout {
+                anchors { fill: parent; leftMargin: 20; rightMargin: 16 }
+                spacing: 12
+                Text { text: "📋"; font.pixelSize: 20 }
+                Text { text: "Review Course"; font.pixelSize: 17; font.weight: Font.DemiBold; color: "white"; Layout.fillWidth: true }
+                Rectangle {
+                    width: 28; height: 28; radius: 14
+                    color: closeHov.containsMouse ? "rgba(255,255,255,0.25)" : "transparent"
+                    Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 15; color: "white" }
+                    MouseArea { id: closeHov; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.close() }
+                }
+            }
+        }
+
+        // ── Body ──────────────────────────────────────────────────────────────
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.margins: 24
+            spacing: 20
+
+            // Course title display
+            Rectangle {
+                Layout.fillWidth: true; height: courseTitleCol.implicitHeight + 20
+                color: "#F9FAFB"; radius: 8; border.color: "#E5E7EB"; border.width: 1
+                Column {
+                    id: courseTitleCol
+                    anchors { fill: parent; margins: 12 }
+                    spacing: 4
+                    Text { text: "Course Title"; font.pixelSize: 11; color: "#9CA3AF" }
+                    Text {
+                        text: root.courseTitle || "Untitled Course"
+                        font.pixelSize: 15; font.weight: Font.Medium; color: "#18181B"
+                        wrapMode: Text.WordWrap; width: parent.width
+                    }
+                }
+            }
+
+            // Select Action label
+            Text { text: "Select Action"; font.pixelSize: 14; font.weight: Font.Medium; color: "#18181B" }
+
+            // Approve radio
+            Rectangle {
+                Layout.fillWidth: true; height: 52; radius: 10
+                color: "white"; border.color: approveRadio.checked ? "#22C55E" : "#E5E7EB"; border.width: approveRadio.checked ? 2 : 1
+                RowLayout {
+                    anchors { fill: parent; leftMargin: 16; rightMargin: 16 }
+                    spacing: 14
+                    // Custom radio dot
+                    Rectangle {
+                        width: 20; height: 20; radius: 10
+                        border.color: approveRadio.checked ? "#22C55E" : "#D1D5DB"; border.width: 2
+                        color: approveRadio.checked ? "#22C55E" : "white"
+                        Rectangle {
+                            anchors.centerIn: parent; width: 8; height: 8; radius: 4
+                            color: "white"; visible: approveRadio.checked
+                        }
+                    }
+                    Text {
+                        text: "✓  Approve and Publish"
+                        font.pixelSize: 14; color: "#18181B"; Layout.fillWidth: true
+                    }
+                }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: approveRadio.checked = true }
+                // invisible CheckBox for state tracking
+                CheckBox { id: approveRadio; visible: false; checked: true }
+            }
+
+            // Reject radio
+            Rectangle {
+                Layout.fillWidth: true; height: 52; radius: 10
+                color: "white"; border.color: rejectRadio.checked ? "#EF4444" : "#E5E7EB"; border.width: rejectRadio.checked ? 2 : 1
+                RowLayout {
+                    anchors { fill: parent; leftMargin: 16; rightMargin: 16 }
+                    spacing: 14
+                    Rectangle {
+                        width: 20; height: 20; radius: 10
+                        border.color: rejectRadio.checked ? "#EF4444" : "#D1D5DB"; border.width: 2
+                        color: rejectRadio.checked ? "#EF4444" : "white"
+                        Rectangle {
+                            anchors.centerIn: parent; width: 8; height: 8; radius: 4
+                            color: "white"; visible: rejectRadio.checked
+                        }
+                    }
+                    Text {
+                        text: "✕  Reject Course"
+                        font.pixelSize: 14; color: "#18181B"; Layout.fillWidth: true
+                    }
+                }
+                MouseArea {
+                    anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                    onClicked: { rejectRadio.checked = true; approveRadio.checked = false }
+                }
+                CheckBox { id: rejectRadio; visible: false; checked: false }
+            }
+
+            // Rejection reason textarea (only when reject selected)
             ColumnLayout {
-                id: courseInfoLayout
-                anchors.fill: parent
-                anchors.margins: 16
-                spacing: 8
+                Layout.fillWidth: true; spacing: 8
+                visible: rejectRadio.checked
 
-                Label {
-                    text: "Course Title"
-                    font.pixelSize: 12
-                    color: Material.hintTextColor
-                }
+                Text { text: "Rejection Reason *"; font.pixelSize: 13; font.weight: Font.Medium; color: "#18181B" }
 
-                Label {
-                    text: root.courseTitle || "Untitled Course"
-                    font.pixelSize: 16
-                    font.weight: Font.Medium
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-            }
-        }
-
-        // Action Selection
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 12
-
-            Label {
-                text: "Select Action"
-                font.pixelSize: 14
-                font.weight: Font.Medium
-            }
-
-            ButtonGroup {
-                id: actionGroup
-                exclusive: true
-            }
-
-            RadioButton {
-                id: approveRadio
-                text: "✓ Approve and Publish"
-                checked: true
-                ButtonGroup.group: actionGroup
-
-                contentItem: RowLayout {
-                    spacing: 8
-
-                    Rectangle {
-                        Layout.preferredWidth: 20
-                        Layout.preferredHeight: 20
-                        radius: 10
-                        border.width: 2
-                        border.color: approveRadio.checked ? Material.color(Material.Green) : Material.hintTextColor
-                        color: approveRadio.checked ? Material.color(Material.Green) : "transparent"
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 10
-                            height: 10
-                            radius: 5
-                            color: "white"
-                            visible: approveRadio.checked
+                Rectangle {
+                    Layout.fillWidth: true; height: 100; radius: 8
+                    border.color: rejectReasonInput.activeFocus ? "#6366F1" : "#E5E7EB"; border.width: 1
+                    clip: true
+                    ScrollView {
+                        anchors.fill: parent
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        TextArea {
+                            id: rejectReasonInput
+                            wrapMode: TextArea.Wrap
+                            placeholderText: "Provide a clear reason so the instructor can improve their course…"
+                            font.pixelSize: 13; color: "#18181B"
+                            background: null; padding: 10
                         }
                     }
-
-                    Label {
-                        text: approveRadio.text
-                        font.pixelSize: 14
-                        Layout.fillWidth: true
-                    }
+                }
+                Text {
+                    text: rejectReasonInput.text.length + " / 500"
+                    font.pixelSize: 11; Layout.alignment: Qt.AlignRight
+                    color: rejectReasonInput.text.length > 500 ? "#EF4444" : "#9CA3AF"
                 }
             }
 
-            RadioButton {
-                id: rejectRadio
-                text: "✗ Reject Course"
-                ButtonGroup.group: actionGroup
-
-                contentItem: RowLayout {
+            // Warning / info box
+            Rectangle {
+                Layout.fillWidth: true; height: warnTxt.implicitHeight + 20; radius: 8
+                color: approveRadio.checked ? "#F0FDF4" : "#FFF7ED"
+                border.color: approveRadio.checked ? "#BBF7D0" : "#FED7AA"; border.width: 1
+                RowLayout {
+                    anchors { fill: parent; margins: 12 }
                     spacing: 8
-
-                    Rectangle {
-                        Layout.preferredWidth: 20
-                        Layout.preferredHeight: 20
-                        radius: 10
-                        border.width: 2
-                        border.color: rejectRadio.checked ? Material.color(Material.Red) : Material.hintTextColor
-                        color: rejectRadio.checked ? Material.color(Material.Red) : "transparent"
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 10
-                            height: 10
-                            radius: 5
-                            color: "white"
-                            visible: rejectRadio.checked
-                        }
-                    }
-
-                    Label {
-                        text: rejectRadio.text
-                        font.pixelSize: 14
-                        Layout.fillWidth: true
-                    }
-                }
-            }
-        }
-
-        // Rejection Reason (shown when reject is selected)
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 8
-            visible: rejectRadio.checked
-
-            Label {
-                text: "Rejection Reason *"
-                font.pixelSize: 14
-                font.weight: Font.Medium
-                color: Material.foreground
-            }
-
-            Label {
-                text: "Please provide a clear reason for rejection to help the instructor improve their course."
-                font.pixelSize: 12
-                color: Material.hintTextColor
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-            }
-
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 120
-                clip: true
-
-                TextArea {
-                    id: rejectionReasonInput
-                    placeholderText: "Example: The course content does not meet our quality standards. Please review sections 3 and 5 for accuracy and add more detailed examples."
-                    wrapMode: TextArea.Wrap
-                    selectByMouse: true
-
-                    background: Rectangle {
-                        radius: 4
-                        border.width: rejectionReasonInput.activeFocus ? 2 : 1
-                        border.color: rejectionReasonInput.activeFocus ? Material.accent : Material.dividerColor
-                        color: "white"
+                    Text { text: "⚠️"; font.pixelSize: 14; Layout.alignment: Qt.AlignTop }
+                    Text {
+                        id: warnTxt; Layout.fillWidth: true
+                        text: approveRadio.checked
+                            ? "This will publish the course and make it visible to all students."
+                            : "The instructor will be notified and can resubmit after improvements."
+                        font.pixelSize: 12; color: approveRadio.checked ? "#166534" : "#92400E"
+                        wrapMode: Text.WordWrap
                     }
                 }
             }
 
-            Label {
-                text: rejectionReasonInput.text.length + " / 500 characters"
-                font.pixelSize: 11
-                color: rejectionReasonInput.text.length > 500 ? Material.color(Material.Red) : Material.hintTextColor
-                Layout.alignment: Qt.AlignRight
-            }
-        }
-
-        // Warning Messages
-        Rectangle {
-            Layout.fillWidth: true
-            height: warningText.height + 24
-            radius: 4
-            color: approveRadio.checked ?
-                Material.color(Material.Green, Material.Shade100) :
-                Material.color(Material.Orange, Material.Shade100)
-            visible: true
-
-            Label {
-                id: warningText
-                anchors.fill: parent
-                anchors.margins: 12
-                text: approveRadio.checked ?
-                    "⚠️ This will publish the course and make it visible to all students." :
-                    "⚠️ The instructor will be notified and can resubmit the course after making improvements."
-                wrapMode: Text.WordWrap
-                font.pixelSize: 12
-                color: approveRadio.checked ?
-                    Material.color(Material.Green, Material.Shade900) :
-                    Material.color(Material.Orange, Material.Shade900)
-            }
-        }
-
-        // Action Buttons
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 12
-
-            Item { Layout.fillWidth: true }
-
-            Button {
-                text: "Cancel"
-                flat: true
-                onClicked: root.close()
-                enabled: !root.isProcessing
+            // Error message
+            Text {
+                id: errorMsg; visible: false; Layout.fillWidth: true
+                font.pixelSize: 12; color: "#DC2626"; wrapMode: Text.WordWrap
+                Timer { id: errTimer; interval: 5000; onTriggered: errorMsg.visible = false }
             }
 
-            Button {
-                id: submitButton
-                text: root.isProcessing ? "Processing..." : (approveRadio.checked ? "Approve & Publish" : "Reject Course")
-                highlighted: true
-                enabled: !root.isProcessing && validateForm()
-                Material.background: approveRadio.checked ?
-                    Material.color(Material.Green) :
-                    Material.color(Material.Red)
+            // Buttons
+            RowLayout {
+                Layout.fillWidth: true; spacing: 12
 
-                onClicked: {
-                    if (approveRadio.checked) {
-                        approveCourse()
-                    } else {
-                        rejectCourse()
+                Item { Layout.fillWidth: true }
+
+                Rectangle {
+                    height: 40; width: cancelTxt.implicitWidth + 28; radius: 8
+                    color: cancelHov.containsMouse ? "#F3F4F6" : "white"
+                    border.color: "#E5E7EB"; border.width: 1
+                    Text { id: cancelTxt; anchors.centerIn: parent; text: "Cancel"; font.pixelSize: 14; color: "#374151" }
+                    MouseArea { id: cancelHov; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        enabled: !root.isProcessing; onClicked: root.close() }
+                }
+
+                Rectangle {
+                    height: 40; width: submitTxt.implicitWidth + 28; radius: 8
+                    color: {
+                        if (root.isProcessing || !canSubmit()) return "#D1D5DB"
+                        if (submitHov.containsMouse) return approveRadio.checked ? "#15803D" : "#B91C1C"
+                        return approveRadio.checked ? "#22C55E" : "#EF4444"
+                    }
+                    Text {
+                        id: submitTxt; anchors.centerIn: parent
+                        text: root.isProcessing ? "Processing…"
+                            : (approveRadio.checked ? "Approve & Publish" : "Reject Course")
+                        font.pixelSize: 14; font.weight: Font.Medium; color: "white"
+                    }
+                    MouseArea {
+                        id: submitHov; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        enabled: !root.isProcessing && canSubmit()
+                        onClicked: approveRadio.checked ? doApprove() : doReject()
                     }
                 }
             }
         }
     }
 
-    function validateForm() {
+    // ── Logic ─────────────────────────────────────────────────────────────────
+    function canSubmit() {
         if (rejectRadio.checked) {
-            return rejectionReasonInput.text.trim().length >= 10 &&
-                   rejectionReasonInput.text.length <= 500
+            return rejectReasonInput.text.trim().length >= 10
+                && rejectReasonInput.text.length <= 500
         }
         return true
     }
 
-    function approveCourse() {
+    function showError(msg) {
+        errorMsg.text = msg
+        errorMsg.visible = true
+        errTimer.restart()
+    }
+
+    function doApprove() {
         if (root.isProcessing) return
-
         root.isProcessing = true
-
         var xhr = new XMLHttpRequest()
         xhr.open("PUT", "https://learning-dashboard-rouge.vercel.app/api/courses/" + root.courseId + "/status")
         xhr.setRequestHeader("Authorization", "Bearer " + (authController ? authController.accessToken : ""))
         xhr.setRequestHeader("Content-Type", "application/json")
         xhr.setRequestHeader("Accept", "application/json")
-
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                root.isProcessing = false
-
-                if (xhr.status === 200) {
-                    try {
-                        var response = JSON.parse(xhr.responseText)
-                        if (response.success) {
-                            root.courseApproved()
-                            root.close()
-                        } else {
-                            showError(response.message || "Failed to approve course")
-                        }
-                    } catch (e) {
-                        showError("Failed to process response")
-                    }
-                } else {
-                    try {
-                        var response = JSON.parse(xhr.responseText)
-                        showError(response.message || "Failed to approve course")
-                    } catch (e) {
-                        showError("Failed to approve course. Please try again.")
-                    }
-                }
-            }
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            root.isProcessing = false
+            try {
+                var r = JSON.parse(xhr.responseText)
+                if (xhr.status === 200 && r.success) { root.courseApproved(); root.close() }
+                else showError(r.message || "Failed to approve course")
+            } catch(e) { showError("Failed to process response") }
         }
-
-        var data = JSON.stringify({
-            status: "published"
-        })
-
-        xhr.send(data)
+        xhr.send(JSON.stringify({ status: "published" }))
     }
 
-    function rejectCourse() {
+    function doReject() {
         if (root.isProcessing) return
-
-        var reason = rejectionReasonInput.text.trim()
-        if (reason.length < 10) {
-            showError("Please provide a detailed rejection reason (at least 10 characters)")
-            return
-        }
-
-        if (reason.length > 500) {
-            showError("Rejection reason is too long (maximum 500 characters)")
-            return
-        }
-
+        var reason = rejectReasonInput.text.trim()
+        if (reason.length < 10) { showError("Please provide a reason (at least 10 characters)"); return }
+        if (reason.length > 500) { showError("Reason too long (max 500 characters)"); return }
         root.isProcessing = true
-
         var xhr = new XMLHttpRequest()
         xhr.open("PUT", "https://learning-dashboard-rouge.vercel.app/api/courses/" + root.courseId + "/status")
         xhr.setRequestHeader("Authorization", "Bearer " + (authController ? authController.accessToken : ""))
         xhr.setRequestHeader("Content-Type", "application/json")
         xhr.setRequestHeader("Accept", "application/json")
-
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                root.isProcessing = false
-
-                if (xhr.status === 200) {
-                    try {
-                        var response = JSON.parse(xhr.responseText)
-                        if (response.success) {
-                            root.courseRejected()
-                            root.close()
-                        } else {
-                            showError(response.message || "Failed to reject course")
-                        }
-                    } catch (e) {
-                        showError("Failed to process response")
-                    }
-                } else {
-                    try {
-                        var response = JSON.parse(xhr.responseText)
-                        showError(response.message || "Failed to reject course")
-                    } catch (e) {
-                        showError("Failed to reject course. Please try again.")
-                    }
-                }
-            }
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            root.isProcessing = false
+            try {
+                var r = JSON.parse(xhr.responseText)
+                if (xhr.status === 200 && r.success) { root.courseRejected(); root.close() }
+                else showError(r.message || "Failed to reject course")
+            } catch(e) { showError("Failed to process response") }
         }
-
-        var data = JSON.stringify({
-            status: "rejected",
-            rejectionReason: reason
-        })
-
-        xhr.send(data)
-    }
-
-    function showError(message) {
-        errorLabel.text = message
-        errorLabel.visible = true
-        errorTimer.restart()
-    }
-
-    // Error message display
-    Label {
-        id: errorLabel
-        visible: false
-        text: ""
-        color: Material.color(Material.Red)
-        font.pixelSize: 12
-        wrapMode: Text.WordWrap
-        Layout.fillWidth: true
-
-        Timer {
-            id: errorTimer
-            interval: 5000
-            onTriggered: errorLabel.visible = false
-        }
-    }
-
-    // Reset form when opened
-    onOpened: {
-        approveRadio.checked = true
-        rejectionReasonInput.text = ""
-        errorLabel.visible = false
-        isProcessing = false
+        xhr.send(JSON.stringify({ status: "rejected", rejectionReason: reason }))
     }
 }
-
-
